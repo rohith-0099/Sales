@@ -1,0 +1,51 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+
+# ML Models
+*.pkl
+*.h5
+*.model
+
+# Data
+*.csv
+*.xlsx
+*.json
+
+# Visualizations
+visualizations/*.png
+visualizations/*.jpg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build
+dist/
+build/
+
+# Environment
+.env
+.env.local
