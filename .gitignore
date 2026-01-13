@@ -17,7 +17,7 @@ build/
 # Data
 *.csv
 *.xlsx
-*.json
+
 
 # Visualizations
 visualizations/*.png

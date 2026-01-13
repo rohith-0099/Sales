@@ -1,0 +1,11 @@
+DATASET EXPLORATION SUMMARY
+======================================================================
+
+1. DIWALI SALES DATA
+   Records: 11,251
+   Columns: User_ID, Cust_name, Product_ID, Gender, Age Group, Age, Marital_Status, State, Zone, Occupation, Product_Category, Orders, Amount, Status, unnamed1
+
+2. INDIAN RETAIL DATA
+   Records: 2,534
+   Columns: Order Priority, Discount offered, Unit Price, Freight Expenses, Freight Mode, Segment, Product Type, Product Sub-Category, Product Container, State, City, Region, Country, Order Date, Ship Date, Profit, QtyOrdered, Sales
+

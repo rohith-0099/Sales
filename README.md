@@ -1,271 +1,271 @@
-# 🚀 Sales Prediction System
+# 🛒 Indian Retail Sales Forecasting System
 
-A full-stack machine learning application that predicts retail sales using XGBoost. Built with Flask (backend) and React (frontend).
-
-## 📋 Features
-
-- **Machine Learning Model**: XGBoost regressor trained on Big Mart sales data
-- **REST API**: Flask backend with CORS support
-- **Modern UI**: React frontend with responsive design
-- **Real-time Predictions**: Instant sales predictions based on product and outlet features
-- **Prediction History**: Track recent predictions
-- **Data Visualization**: Model performance charts and feature importance
-
-## 🛠️ Technology Stack
-
-### Backend
-- Python 3.8+
-- Flask 3.0.0
-- XGBoost 2.0.3
-- Pandas, NumPy, Scikit-learn
-- Matplotlib, Seaborn
-
-### Frontend
-- React 18
-- Vite
-- Axios
-- Modern CSS with gradients
-
-## 📂 Project Structure
-
-```
-sales-prediction-system/
-├── backend/
-│   ├── app.py                    # Flask API
-│   ├── model.py                  # ML training script
-│   ├── requirements.txt          # Python dependencies
-│   ├── models/                   # Saved models
-│   ├── data/                     # Training data (Train.csv)
-│   └── visualizations/           # Generated charts
-│
-└── frontend/
-    ├── src/
-    │   ├── App.jsx              # Main React component
-    │   └── App.css              # Styling
-    ├── package.json
-    └── vite.config.js
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- npm
-
-### Backend Setup
-
-1. **Navigate to backend folder**
-   ```bash
-   cd backend
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   # Windows
-   python -m venv venv
-   venv\Scripts\activate
-
-   # Mac/Linux
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Add your dataset**
-   - Place `Train.csv` in the `data/` folder
-
-5. **Train the model**
-   ```bash
-   python model.py
-   ```
-
-6. **Start Flask server**
-   ```bash
-   python app.py
-   ```
-   Server runs on `http://localhost:5000`
-
-### Frontend Setup
-
-1. **Navigate to frontend folder**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
-   App runs on `http://localhost:5173`
-
-## 📊 How to Use
-
-1. Open `http://localhost:5173` in your browser
-2. Fill in the product details:
-   - Item information (ID, weight, type, MRP, etc.)
-   - Outlet information (ID, size, location, type, etc.)
-3. Click "Predict Sales"
-4. View the predicted sales amount
-
-### Sample Input
-```
-Item Identifier: FDA15
-Item Weight: 9.30
-Item Fat Content: Low Fat
-Item Visibility: 0.016
-Item Type: Dairy
-Item MRP: 249.81
-Outlet Identifier: OUT049
-Outlet Establishment Year: 1999
-Outlet Size: Medium
-Outlet Location Type: Tier 1
-Outlet Type: Supermarket Type1
-```
-
-## 🔌 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Health check |
-| GET | `/api/health` | Model status |
-| POST | `/api/predict` | Single prediction |
-| GET | `/api/model-info` | Model details |
-| POST | `/api/batch-predict` | Batch predictions |
-
-### Example API Request
-```bash
-curl -X POST http://localhost:5000/api/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "Item_Identifier": "FDA15",
-    "Item_Weight": 9.3,
-    "Item_Fat_Content": "Low Fat",
-    "Item_Visibility": 0.016,
-    "Item_Type": "Dairy",
-    "Item_MRP": 249.81,
-    "Outlet_Identifier": "OUT049",
-    "Outlet_Establishment_Year": 1999,
-    "Outlet_Size": "Medium",
-    "Outlet_Location_Type": "Tier 1",
-    "Outlet_Type": "Supermarket Type1"
-  }'
-```
-
-## 📈 Model Performance
-
-- **R² Score**: ~0.56 (56% variance explained)
-- **MAE**: ~$847 (average error)
-- **RMSE**: ~$1,093 (root mean squared error)
-
-## 🎯 Key Features
-
-### Machine Learning
-- Data preprocessing and cleaning
-- Label encoding for categorical variables
-- XGBoost regression model
-- Model persistence with pickle
-- Feature importance analysis
-
-### Backend
-- RESTful API design
-- CORS enabled for frontend integration
-- Input validation
-- Error handling
-- Model loading on startup
-
-### Frontend
-- Responsive design
-- Form validation
-- Loading states
-- Error handling
-- Prediction history
-- Modern gradient UI
-
-## 🔧 Customization
-
-### Change Model Parameters
-Edit `backend/model.py`:
-```python
-model = XGBRegressor(
-    n_estimators=200,      # More trees
-    learning_rate=0.05,    # Slower learning
-    max_depth=7,           # Deeper trees
-    random_state=42
-)
-```
-
-### Change API URL
-Edit `frontend/src/App.jsx`:
-```javascript
-const API_URL = 'http://your-backend-url/api'
-```
-
-## 🐛 Troubleshooting
-
-### "Model not found" error
-- Make sure you ran `python model.py` first
-
-### "Failed to connect to server"
-- Check if Flask is running on port 5000
-- Verify CORS is enabled in `app.py`
-
-### CORS errors
-- Ensure `flask-cors` is installed
-- Check API_URL in `App.jsx`
-
-## 📚 Dataset
-
-This project uses the Big Mart Sales dataset with the following features:
-
-**Item Features:**
-- Item_Identifier
-- Item_Weight
-- Item_Fat_Content
-- Item_Visibility
-- Item_Type
-- Item_MRP
-
-**Outlet Features:**
-- Outlet_Identifier
-- Outlet_Establishment_Year
-- Outlet_Size
-- Outlet_Location_Type
-- Outlet_Type
-
-**Target:**
-- Item_Outlet_Sales (predicted value)
-
-## 🎓 Learning Outcomes
-
-- Machine Learning with XGBoost
-- Data preprocessing and encoding
-- Flask REST API development
-- React frontend with hooks
-- Full-stack integration
-- Model deployment
-
-## 📝 License
-
-This project is open source and available under the MIT License.
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to submit issues and pull requests.
-
-## 📧 Contact
-
-For questions or feedback, please open an issue on GitHub.
+AI-powered sales prediction platform with CSV upload, festival analysis, and demographic insights for Indian retail markets.
 
 ---
 
-**Built with ❤️ using React, Flask, and XGBoost**
+## 🚀 Quick Start Guide
+
+### Prerequisites
+- **Python 3.8+** installed
+- **Node.js 16+** and npm installed
+- Virtual environment already set up in `backend/venv/`
+
+---
+
+## ▶️ Starting the Application
+
+You need **TWO terminal windows** - one for backend, one for frontend.
+
+### 1️⃣ Start Backend (Flask API)
+
+**Open Terminal 1:**
+
+```powershell
+# Navigate to backend folder
+cd c:\Users\rohit\Desktop\sales-prediction-system\backend
+
+# Activate virtual environment and start server
+venv\Scripts\python.exe app.py
+```
+
+**✅ Expected Output:**
+```
+✅ Integrated model loaded successfully!
+   Features: 25
+   Test R²: 0.9359
+   Datasets: BigMart, Diwali Sales, Indian Retail
+🚀 Starting Enhanced Flask server...
+📊 Festival calendar loaded
+🔮 Forecasting capabilities enabled
+ * Running on http://127.0.0.1:5000
+```
+
+**Backend is ready when you see:** `Running on http://127.0.0.1:5000`
+
+---
+
+### 2️⃣ Start Frontend (React + Vite)
+
+**Open Terminal 2:**
+
+```powershell
+# Navigate to frontend folder
+cd c:\Users\rohit\Desktop\sales-prediction-system\frontend
+
+# Start development server
+npm run dev
+```
+
+**✅ Expected Output:**
+```
+VITE v5.4.21  ready in 651 ms
+
+➜  Local:   http://localhost:5173/
+➜  Network: use --host to expose
+```
+
+**Frontend is ready when you see:** `Local: http://localhost:5173/`
+
+---
+
+### 3️⃣ Access the Application
+
+Open your browser and navigate to:
+```
+http://localhost:5173
+```
+
+You should see the **Indian Retail Sales Forecasting System** dashboard with:
+- **Bulk Forecast (CSV Upload)** tab - Upload historical data for predictions
+- **Single Item Prediction** tab - Individual product forecasting
+
+---
+
+## 🛠️ Alternative: Using Batch Files (Windows Only)
+
+### Backend:
+```powershell
+cd backend
+.\start_server.bat
+```
+
+### Frontend:
+```powershell
+cd frontend
+npm run dev
+```
+
+---
+
+## ⚙️ Features Overview
+
+### 📊 Bulk CSV Forecasting
+1. Click **"Bulk Forecast (CSV Upload)"** tab
+2. Drag & drop a CSV file with columns: `date`, `sales`
+3. Get instant:
+   - 30-day forecast
+   - Festival impact analysis
+   - Pattern recognition
+
+### 🔮 Single Item Prediction
+1. Click **"Single Item Prediction"** tab
+2. Enter product details (weight, MRP, category, etc.)
+3. Get immediate sales prediction
+
+---
+
+## 📁 Project Structure
+
+```
+sales-prediction-system/
+├── backend/                    # Flask API server
+│   ├── venv/                   # Python virtual environment
+│   ├── models/                 # Trained ML models
+│   │   └── integrated_sales_model.pkl (22K+ records, R²=0.9359)
+│   ├── data/                   # Datasets
+│   │   ├── diwali_sales/       # 11K Diwali transactions
+│   │   ├── indian_retail/      # 2.5K retail orders
+│   │   └── unified_training_data.csv (Combined dataset)
+│   ├── app.py                  # Main Flask application
+│   ├── indian_holidays.py      # Festival calendar
+│   └── requirements.txt        # Python dependencies
+│
+└── frontend/                   # React + Vite interface
+    ├── src/
+    │   ├── App.jsx             # Main dashboard
+    │   ├── components/
+    │   │   ├── FileUpload.jsx  # CSV upload component
+    │   │   └── ForecastChart.jsx # Interactive charts
+    │   └── App.css             # Tailwind styles
+    ├── package.json            # Node dependencies
+    └── tailwind.config.js      # Tailwind configuration
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### ❌ Port Already in Use
+
+**Backend (Port 5000):**
+```powershell
+# Check what's using port 5000
+netstat -ano | findstr :5000
+
+# Kill the process (replace <PID> with actual number)
+taskkill /PID <PID> /F
+```
+
+**Frontend (Port 5173):**
+```powershell
+# Check what's using port 5173
+netstat -ano | findstr :5173
+
+# Vite will auto-assign a different port if 5173 is busy
+```
+
+### ❌ Backend Error: "Model not found"
+
+The integrated model should be at `backend/models/integrated_sales_model.pkl`.
+
+**Solution:**
+```powershell
+cd backend
+venv\Scripts\python.exe train_integrated_model.py
+```
+
+This will retrain the model using all three datasets.
+
+### ❌ Frontend Error: "Failed to connect to server"
+
+**Check:**
+1. Backend is running on port 5000
+2. Look for: `Running on http://127.0.0.1:5000` in backend terminal
+3. If not running, restart backend server
+
+### ❌ Dependencies Missing
+
+**Backend:**
+```powershell
+cd backend
+venv\Scripts\pip install -r requirements.txt
+```
+
+**Frontend:**
+```powershell
+cd frontend
+npm install
+```
+
+---
+
+## 📊 Model Information
+
+### Current Model: **Integrated Sales Model**
+- **Training Data:** 22,285 records
+- **Data Sources:** BigMart + Diwali Sales + Indian Retail
+- **Accuracy:** R² = 0.9359 (93.59%)
+- **Features:** 25+ (demographics, festivals, regions, temporal)
+
+### Top Predictive Features:
+1. **Gender** - Customer demographics
+2. **Year** - Temporal trends
+3. **Festival Season** - Diwali, Eid, Holi impact
+4. **Month** - Seasonal patterns
+5. **Region/State** - Geographic variations
+
+---
+
+## 🎯 Use Cases
+
+### Scenario 1: CSV Bulk Upload
+"Upload 1 year of store sales data to get next 30-day forecast with festival overlays"
+
+### Scenario 2: Diwali Planning
+"Predict sales surge during Diwali week for inventory optimization"
+
+### Scenario 3: Regional Analysis
+"Compare sales patterns across North vs South India"
+
+---
+
+## 📝 API Endpoints
+
+The backend provides these REST APIs:
+
+| Endpoint | Method | Purpose |
+|:---------|:-------|:--------|
+| `/api/predict` | POST | Single item prediction |
+| `/api/upload-csv` | POST | Upload historical sales CSV |
+| `/api/forecast` | POST | Generate time-series forecast |
+| `/api/analyze-patterns` | POST | Pattern analysis |
+| `/api/festival-impact` | GET | Upcoming festivals |
+| `/api/health` | GET | Server health check |
+
+---
+
+## 🛑 Stopping the Application
+
+**Backend:**
+- Press `Ctrl + C` in the backend terminal
+
+**Frontend:**
+- Press `Ctrl + C` in the frontend terminal
+
+---
+
+## 📚 Additional Documentation
+
+- [SETUP.md](SETUP.md) - Initial setup and installation
+- [QUICKSTART.md](QUICKSTART.md) - First-time configuration
+- [backend/data/README.md](backend/data/README.md) - Dataset documentation
+- Walkthrough artifact - Complete feature guide
+
+---
+
+## 🎉 You're All Set!
+
+The system is now ready to forecast Indian retail sales with 93.59% accuracy! 
+
+**Need help?** Check the troubleshooting section above or review the documentation files.

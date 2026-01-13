@@ -1,16 +1,21 @@
-/**
- * Main React Component for Sales Prediction System
- * File: frontend/src/App.jsx
- */
+import { useState } from 'react';
+import axios from 'axios';
+import FileUpload from './components/FileUpload';
+import ForecastChart from './components/ForecastChart';
+import './App.css';
 
-import { useState } from 'react'
-import './App.css'
-
-// API base URL (change this to your backend URL)
-const API_URL = 'http://localhost:5000/api'
+const API_URL = 'http://localhost:5000/api';
 
 function App() {
-  // Form state
+  const [activeTab, setActiveTab] = useState('upload'); // 'upload' or 'single'
+  const [uploadedData, setUploadedData] = useState(null);
+  const [fileName, setFileName] = useState('');
+  const [forecastData, setForecastData] = useState(null);
+  const [patternAnalysis, setPatternAnalysis] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Single prediction state (original feature)
   const [formData, setFormData] = useState({
     Item_Identifier: '',
     Item_Weight: '',
@@ -23,341 +28,367 @@ function App() {
     Outlet_Size: 'Medium',
     Outlet_Location_Type: 'Tier 1',
     Outlet_Type: 'Supermarket Type1'
-  })
+  });
+  const [prediction, setPrediction] = useState(null);
 
-  // Result state
-  const [prediction, setPrediction] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [history, setHistory] = useState([])
+  // Handle file upload
+  const handleFileUploaded = async (data, name) => {
+    setFileName(name);
+    setUploadedData(data);
+    setError(null);
 
-  // Handle input changes
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
+    // Auto-generate forecast if data has 'date' and 'sales' columns
+    if (data.length > 0 && data[0].date && data[0].sales) {
+      generateForecast(data);
+      analyzePatterns(data);
+    } else {
+      setError('CSV must contain "date" and "sales" columns');
+    }
+  };
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setPrediction(null)
+  // Generate forecast
+  const generateForecast = async (data) => {
+    setLoading(true);
+    setError(null);
 
     try {
-      // Convert string numbers to actual numbers
+      const response = await axios.post(`${API_URL}/forecast`, {
+        historical_data: data,
+        forecast_days: 30
+      });
+
+      if (response.data.success) {
+        setForecastData(response.data.forecast);
+      } else {
+        setError(response.data.error || 'Forecast generation failed');
+      }
+    } catch (err) {
+      setError(`Failed to generate forecast: ${err.message}`);
+      console.error('Forecast error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Analyze patterns
+  const analyzePatterns = async (data) => {
+    try {
+      const response = await axios.post(`${API_URL}/analyze-patterns`, {
+        historical_data: data
+      });
+
+      if (response.data.success) {
+        setPatternAnalysis(response.data.patterns);
+      }
+    } catch (err) {
+      console.error('Pattern analysis error:', err);
+    }
+  };
+
+  // Handle single prediction (original feature)
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setPrediction(null);
+
+    try {
       const processedData = {
         ...formData,
         Item_Weight: parseFloat(formData.Item_Weight),
         Item_Visibility: parseFloat(formData.Item_Visibility),
         Item_MRP: parseFloat(formData.Item_MRP),
         Outlet_Establishment_Year: parseInt(formData.Outlet_Establishment_Year)
-      }
+      };
 
-      // Make API call
-      const response = await fetch(`${API_URL}/predict`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(processedData)
-      })
+      const response = await axios.post(`${API_URL}/predict`, processedData);
 
-      const data = await response.json()
-
-      if (data.success) {
-        setPrediction(data.predicted_sales)
-        
-        // Add to history
-        const newEntry = {
-          id: Date.now(),
-          item: formData.Item_Identifier,
-          sales: data.predicted_sales,
-          timestamp: new Date().toLocaleString()
-        }
-        setHistory(prev => [newEntry, ...prev].slice(0, 10)) // Keep last 10
+      if (response.data.success) {
+        setPrediction(response.data.predicted_sales);
       } else {
-        setError(data.error || 'Prediction failed')
+        setError(response.data.error || 'Prediction failed');
       }
     } catch (err) {
-      setError('Failed to connect to server. Make sure backend is running on port 5000.')
-      console.error('Error:', err)
+      setError(`Failed to connect to server: ${err.message}`);
+      console.error('Error:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  // Reset form
-  const handleReset = () => {
-    setFormData({
-      Item_Identifier: '',
-      Item_Weight: '',
-      Item_Fat_Content: 'Low Fat',
-      Item_Visibility: '',
-      Item_Type: 'Dairy',
-      Item_MRP: '',
-      Outlet_Identifier: '',
-      Outlet_Establishment_Year: '',
-      Outlet_Size: 'Medium',
-      Outlet_Location_Type: 'Tier 1',
-      Outlet_Type: 'Supermarket Type1'
-    })
-    setPrediction(null)
-    setError(null)
-  }
+  };
 
   return (
-    <div className="app">
-      <header className="header">
-        <h1>🛒 Big Mart Sales Prediction System</h1>
-        <p>Predict sales using Machine Learning (XGBoost)</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
+      <header className="bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+            🛒 Indian Retail Sales Forecasting System
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Upload your sales data, get AI-powered forecasts with festival impact analysis
+          </p>
+        </div>
       </header>
 
-      <div className="container">
-        {/* Prediction Form */}
-        <div className="form-section">
-          <h2>📝 Enter Product Details</h2>
-          <form onSubmit={handleSubmit}>
-            {/* Item Information */}
-            <div className="form-group">
-              <label>Item Identifier*</label>
-              <input
-                type="text"
-                name="Item_Identifier"
-                value={formData.Item_Identifier}
-                onChange={handleChange}
-                placeholder="e.g., FDA15"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Item Weight (kg)*</label>
-              <input
-                type="number"
-                step="0.01"
-                name="Item_Weight"
-                value={formData.Item_Weight}
-                onChange={handleChange}
-                placeholder="e.g., 9.30"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Item Fat Content*</label>
-              <select
-                name="Item_Fat_Content"
-                value={formData.Item_Fat_Content}
-                onChange={handleChange}
-                required
-              >
-                <option value="Low Fat">Low Fat</option>
-                <option value="Regular">Regular</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Item Visibility*</label>
-              <input
-                type="number"
-                step="0.001"
-                name="Item_Visibility"
-                value={formData.Item_Visibility}
-                onChange={handleChange}
-                placeholder="e.g., 0.016"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Item Type*</label>
-              <select
-                name="Item_Type"
-                value={formData.Item_Type}
-                onChange={handleChange}
-                required
-              >
-                <option value="Dairy">Dairy</option>
-                <option value="Soft Drinks">Soft Drinks</option>
-                <option value="Meat">Meat</option>
-                <option value="Fruits and Vegetables">Fruits and Vegetables</option>
-                <option value="Household">Household</option>
-                <option value="Baking Goods">Baking Goods</option>
-                <option value="Snack Foods">Snack Foods</option>
-                <option value="Frozen Foods">Frozen Foods</option>
-                <option value="Breakfast">Breakfast</option>
-                <option value="Health and Hygiene">Health and Hygiene</option>
-                <option value="Hard Drinks">Hard Drinks</option>
-                <option value="Canned">Canned</option>
-                <option value="Breads">Breads</option>
-                <option value="Starchy Foods">Starchy Foods</option>
-                <option value="Others">Others</option>
-                <option value="Seafood">Seafood</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Item MRP ($)*</label>
-              <input
-                type="number"
-                step="0.01"
-                name="Item_MRP"
-                value={formData.Item_MRP}
-                onChange={handleChange}
-                placeholder="e.g., 249.81"
-                required
-              />
-            </div>
-
-            {/* Outlet Information */}
-            <h3>🏪 Outlet Information</h3>
-
-            <div className="form-group">
-              <label>Outlet Identifier*</label>
-              <input
-                type="text"
-                name="Outlet_Identifier"
-                value={formData.Outlet_Identifier}
-                onChange={handleChange}
-                placeholder="e.g., OUT049"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Outlet Establishment Year*</label>
-              <input
-                type="number"
-                name="Outlet_Establishment_Year"
-                value={formData.Outlet_Establishment_Year}
-                onChange={handleChange}
-                placeholder="e.g., 1999"
-                min="1985"
-                max="2024"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Outlet Size*</label>
-              <select
-                name="Outlet_Size"
-                value={formData.Outlet_Size}
-                onChange={handleChange}
-                required
-              >
-                <option value="Small">Small</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Outlet Location Type*</label>
-              <select
-                name="Outlet_Location_Type"
-                value={formData.Outlet_Location_Type}
-                onChange={handleChange}
-                required
-              >
-                <option value="Tier 1">Tier 1</option>
-                <option value="Tier 2">Tier 2</option>
-                <option value="Tier 3">Tier 3</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Outlet Type*</label>
-              <select
-                name="Outlet_Type"
-                value={formData.Outlet_Type}
-                onChange={handleChange}
-                required
-              >
-                <option value="Supermarket Type1">Supermarket Type1</option>
-                <option value="Supermarket Type2">Supermarket Type2</option>
-                <option value="Supermarket Type3">Supermarket Type3</option>
-                <option value="Grocery Store">Grocery Store</option>
-              </select>
-            </div>
-
-            {/* Buttons */}
-            <div className="button-group">
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? '⏳ Predicting...' : '🔮 Predict Sales'}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={handleReset}>
-                🔄 Reset
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Results Section */}
-        <div className="results-section">
-          {/* Prediction Result */}
-          {prediction !== null && (
-            <div className="result-card success">
-              <h3>✅ Prediction Result</h3>
-              <div className="prediction-value">
-                ${prediction.toFixed(2)}
-              </div>
-              <p>Estimated Sales</p>
-            </div>
-          )}
-
-          {/* Error Display */}
-          {error && (
-            <div className="result-card error">
-              <h3>❌ Error</h3>
-              <p>{error}</p>
-            </div>
-          )}
-
-          {/* Loading State */}
-          {loading && (
-            <div className="result-card loading">
-              <div className="spinner"></div>
-              <p>Analyzing product data...</p>
-            </div>
-          )}
-
-          {/* Prediction History */}
-          {history.length > 0 && (
-            <div className="history-card">
-              <h3>📊 Recent Predictions</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item ID</th>
-                    <th>Predicted Sales</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((entry) => (
-                    <tr key={entry.id}>
-                      <td>{entry.item}</td>
-                      <td>${entry.sales.toFixed(2)}</td>
-                      <td>{entry.timestamp}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {/* Tab Navigation */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div className="flex space-x-4 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('upload')}
+            className={`px-6 py-3 font-medium transition-all ${activeTab === 'upload'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            📊 Bulk Forecast (CSV Upload)
+          </button>
+          <button
+            onClick={() => setActiveTab('single')}
+            className={`px-6 py-3 font-medium transition-all ${activeTab === 'single'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            🔮 Single Item Prediction
+          </button>
         </div>
       </div>
 
-      <footer className="footer">
-        <p>Built with React + Flask + XGBoost | Data: Big Mart Sales Dataset</p>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'upload' ? (
+          // CSV Upload & Forecast View
+          <div className="space-y-6">
+            {/* Upload Section */}
+            {!uploadedData && (
+              <div className="bg-white rounded-lg shadow-md p-6 animate-fade-in">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                  Upload Historical Sales Data
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  Upload a CSV file with columns: <code className="bg-gray-100 px-2 py-1 rounded">date</code> and <code className="bg-gray-100 px-2 py-1 rounded">sales</code>
+                </p>
+                <FileUpload onFileUploaded={handleFileUploaded} />
+              </div>
+            )}
+
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg animate-fade-in">
+                <p className="text-red-700">❌ {error}</p>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg animate-pulse">
+                <p className="text-blue-700">⏳ Generating forecast...</p>
+              </div>
+            )}
+
+            {/* Results */}
+            {uploadedData && (
+              <div className="space-y-6 animate-slide-up">
+                {/* File Info */}
+                <div className="bg-white rounded-lg shadow-md p-4">
+                  <p className="text-gray-700">
+                    📁 <span className="font-semibold">{fileName}</span> - {uploadedData.length} records loaded
+                  </p>
+                </div>
+
+                {/* Forecast Chart */}
+                {forecastData && (
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <ForecastChart
+                      historicalData={uploadedData}
+                      forecastData={forecastData}
+                      festivals={[]}
+                    />
+                  </div>
+                )}
+
+                {/* Pattern Analysis */}
+                {patternAnalysis && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Festival Impact */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                      <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                        🎉 Festival Impact
+                      </h3>
+                      <div className="space-y-2">
+                        <p className="text-gray-700">
+                          Normal Days: <span className="font-bold text-blue-600">
+                            ${patternAnalysis.festival_impact.average_sales_normal_days}
+                          </span>
+                        </p>
+                        <p className="text-gray-700">
+                          Festival Days: <span className="font-bold text-green-600">
+                            ${patternAnalysis.festival_impact.average_sales_festival_days}
+                          </span>
+                        </p>
+                        <p className="text-gray-700">
+                          Uplift: <span className="font-bold text-purple-600">
+                            +{patternAnalysis.festival_impact.uplift_percentage}%
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Top Festivals */}
+                    {patternAnalysis.top_festivals && patternAnalysis.top_festivals.length > 0 && (
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                          🏆 Top Performing Festivals
+                        </h3>
+                        <ul className="space-y-2">
+                          {patternAnalysis.top_festivals.map((fest, idx) => (
+                            <li key={idx} className="flex justify-between items-center">
+                              <span className="text-gray-700">{fest.festival}</span>
+                              <span className="font-semibold text-blue-600">
+                                ${fest.average_sales.toFixed(2)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Reset Button */}
+                <button
+                  onClick={() => {
+                    setUploadedData(null);
+                    setForecastData(null);
+                    setPatternAnalysis(null);
+                    setFileName('');
+                  }}
+                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-all"
+                >
+                  🔄 Upload New File
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Single Prediction View (Original Feature)
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Form */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+                📝 Enter Product Details
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Item Identifier*
+                  </label>
+                  <input
+                    type="text"
+                    name="Item_Identifier"
+                    value={formData.Item_Identifier}
+                    onChange={handleChange}
+                    placeholder="e.g., FDA15"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Weight (kg)*
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="Item_Weight"
+                      value={formData.Item_Weight}
+                      onChange={handleChange}
+                      placeholder="9.30"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      MRP ($)*
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="Item_MRP"
+                      value={formData.Item_MRP}
+                      onChange={handleChange}
+                      placeholder="249.81"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fat Content*
+                  </label>
+                  <select
+                    name="Item_Fat_Content"
+                    value={formData.Item_Fat_Content}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Low Fat">Low Fat</option>
+                    <option value="Regular">Regular</option>
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  {loading ? '⏳ Predicting...' : '🔮 Predict Sales'}
+                </button>
+              </form>
+            </div>
+
+            {/* Results */}
+            <div className="space-y-6">
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                  <p className="text-red-700">❌ {error}</p>
+                </div>
+              )}
+
+              {prediction !== null && (
+                <div className="bg-white rounded-lg shadow-md p-8 text-center animate-slide-up">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                    ✅ Prediction Result
+                  </h3>
+                  <div className="text-5xl font-bold text-green-600 my-6">
+                    ${prediction.toFixed(2)}
+                  </div>
+                  <p className="text-gray-600">Estimated Sales</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white shadow-md mt-12">
+        <div className="max-w-7xl mx-auto px-4 py-6 text-center text-gray-600">
+          <p>Built with React + Tailwind + Flask + XGBoost + Prophet | Indian Festival Analysis Enabled 🎉</p>
+        </div>
       </footer>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
