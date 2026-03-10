@@ -1,271 +1,192 @@
-# 🛒 Indian Retail Sales Forecasting System
+# Indian Retail Sales Forecaster and AI Analyst
 
-AI-powered sales prediction platform with CSV upload, festival analysis, and demographic insights for Indian retail markets.
+This project is a retail analytics system for store owners and analysts who want to upload historical sales data and turn it into actionable business insights. The application analyzes past sales, estimates near-term future sales, highlights trends and patterns, and lets users drill down into individual products by name or unique ID. It also includes multilingual AI explanations powered by Google Gemini to explain what is happening in the data, which products deserve more focus, and how sales can be improved.
 
----
+## Core Capabilities
 
-## 🚀 Quick Start Guide
+- Upload historical retail sales data in CSV format.
+- Analyze current sales health from uploaded data.
+- Generate future sales forecasts for the next 30 days.
+- Show patterns such as monthly trends and festival impact.
+- Detect product identifiers in the uploaded file and filter analysis by product.
+- Use Gemini AI to generate multilingual business recommendations.
+- Run a separate manual single-item sales prediction flow with the trained model.
 
-### Prerequisites
-- **Python 3.8+** installed
-- **Node.js 16+** and npm installed
-- Virtual environment already set up in `backend/venv/`
+## What the System Analyzes
 
----
+After you upload a file with `date` and `sales` columns, the system can:
 
-## ▶️ Starting the Application
+- summarize the uploaded data
+- forecast upcoming sales
+- show trend and pattern information
+- compare normal days with festival periods
+- identify top-performing festivals
+- let you search for a product and view its specific forecast
+- generate AI-based explanations and strategy suggestions
 
-You need **TWO terminal windows** - one for backend, one for frontend.
+Supported product lookup columns include:
 
-### 1️⃣ Start Backend (Flask API)
+- `product_code`
+- `product_id`
+- `item_identifier`
+- `product`
+- `item`
+- `product_name`
 
-**Open Terminal 1:**
+## Example Use Case
+
+A retail store uploads daily, monthly, or yearly sales data. The system reads the historical records, shows the current performance pattern, predicts future sales, and allows the user to search for a specific product to inspect its sales behavior separately. Gemini AI then explains the trend in the selected language and suggests which products need more attention and what actions may help improve revenue.
+
+## Tech Stack
+
+- Frontend: React, Vite, Tailwind CSS, Recharts
+- Backend: Flask, Pandas, Prophet, scikit-learn
+- ML model: XGBoost-based sales prediction pipeline
+- AI assistant: Google Gemini
+- Domain logic: Indian festival calendar and holiday-aware analysis
+
+## Quick Start
+
+You need two terminals: one for the backend and one for the frontend.
+
+### 1. Start the backend
 
 ```powershell
-# Navigate to backend folder
 cd c:\Users\rohit\Desktop\sales-prediction-system\backend
-
-# Activate virtual environment and start server
 venv\Scripts\python.exe app.py
 ```
 
-**✅ Expected Output:**
-```
-✅ Integrated model loaded successfully!
-   Features: 25
-   Test R²: 0.9359
-   Datasets: BigMart, Diwali Sales, Indian Retail
-🚀 Starting Enhanced Flask server...
-📊 Festival calendar loaded
-🔮 Forecasting capabilities enabled
- * Running on http://127.0.0.1:5000
+The backend is ready when it shows:
+
+```text
+Running on http://127.0.0.1:5000
 ```
 
-**Backend is ready when you see:** `Running on http://127.0.0.1:5000`
-
----
-
-### 2️⃣ Start Frontend (React + Vite)
-
-**Open Terminal 2:**
+### 2. Start the frontend
 
 ```powershell
-# Navigate to frontend folder
 cd c:\Users\rohit\Desktop\sales-prediction-system\frontend
-
-# Start development server
 npm run dev
 ```
 
-**✅ Expected Output:**
-```
-VITE v5.4.21  ready in 651 ms
+The frontend is ready when it shows a local URL such as:
 
-➜  Local:   http://localhost:5173/
-➜  Network: use --host to expose
+```text
+http://localhost:5173/
 ```
 
-**Frontend is ready when you see:** `Local: http://localhost:5173/`
+### 3. Open the app
 
----
+Visit:
 
-### 3️⃣ Access the Application
-
-Open your browser and navigate to:
-```
+```text
 http://localhost:5173
 ```
 
-You should see the **Indian Retail Sales Forecasting System** dashboard with:
-- **Bulk Forecast (CSV Upload)** tab - Upload historical data for predictions
-- **Single Item Prediction** tab - Individual product forecasting
+## Expected Input Format
 
----
+Minimum required columns:
 
-## 🛠️ Alternative: Using Batch Files (Windows Only)
-
-### Backend:
-```powershell
-cd backend
-.\start_server.bat
+```csv
+date,sales
+2025-01-01,2500
+2025-01-02,2700
 ```
 
-### Frontend:
-```powershell
-cd frontend
-npm run dev
+Optional product-level analysis:
+
+```csv
+date,sales,product_id,product_name
+2025-01-01,2500,P101,Milk
+2025-01-02,1800,P102,Bread
 ```
 
----
+Notes:
 
-## ⚙️ Features Overview
+- `date` must be a valid date column.
+- `sales` must be numeric.
+- Product filtering is enabled only if one supported product column is present.
+- The current forecast flow produces a 30-day future forecast.
 
-### 📊 Bulk CSV Forecasting
-1. Click **"Bulk Forecast (CSV Upload)"** tab
-2. Drag & drop a CSV file with columns: `date`, `sales`
-3. Get instant:
-   - 30-day forecast
-   - Festival impact analysis
-   - Pattern recognition
+## Workflow
 
-### 🔮 Single Item Prediction
-1. Click **"Single Item Prediction"** tab
-2. Enter product details (weight, MRP, category, etc.)
-3. Get immediate sales prediction
+1. Upload a sales CSV file.
+2. Optionally choose a product before analysis.
+3. Run analysis to generate forecasts and pattern insights.
+4. Review the forecast chart and festival-based sales impact.
+5. Search for a specific product to inspect its individual behavior.
+6. Request Gemini AI insights in English, Hindi, Marathi, Bengali, Telugu, or Tamil.
 
----
+## AI Insights
 
-## 📁 Project Structure
+The AI insights feature uses Google Gemini to generate:
 
+- current sales health commentary
+- future outlook based on forecasted data
+- product focus suggestions
+- practical sales improvement strategies
+
+To enable it, create `backend/.env` with:
+
+```env
+GOOGLE_API_KEY=your_api_key_here
 ```
+
+## API Endpoints
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/api/predict` | POST | Manual single-item sales prediction |
+| `/api/upload-csv` | POST | Upload and inspect historical CSV data |
+| `/api/forecast` | POST | Generate forecast from historical sales |
+| `/api/analyze-patterns` | POST | Analyze monthly trends and festival effects |
+| `/api/festival-impact` | GET | View upcoming festivals and expected impact |
+| `/api/model-info` | GET | Show loaded model information |
+| `/api/health` | GET | Check backend health |
+| `/api/ai-insights` | POST | Generate multilingual Gemini analysis |
+
+## Project Structure
+
+```text
 sales-prediction-system/
-├── backend/                    # Flask API server
-│   ├── venv/                   # Python virtual environment
-│   ├── models/                 # Trained ML models
-│   │   └── integrated_sales_model.pkl (22K+ records, R²=0.9359)
-│   ├── data/                   # Datasets
-│   │   ├── diwali_sales/       # 11K Diwali transactions
-│   │   ├── indian_retail/      # 2.5K retail orders
-│   │   └── unified_training_data.csv (Combined dataset)
-│   ├── app.py                  # Main Flask application
-│   ├── indian_holidays.py      # Festival calendar
-│   └── requirements.txt        # Python dependencies
-│
-└── frontend/                   # React + Vite interface
-    ├── src/
-    │   ├── App.jsx             # Main dashboard
-    │   ├── components/
-    │   │   ├── FileUpload.jsx  # CSV upload component
-    │   │   └── ForecastChart.jsx # Interactive charts
-    │   └── App.css             # Tailwind styles
-    ├── package.json            # Node dependencies
-    └── tailwind.config.js      # Tailwind configuration
+|-- backend/
+|   |-- app.py
+|   |-- requirements.txt
+|   |-- train_integrated_model.py
+|   |-- unified_data_processor.py
+|   |-- indian_holidays.py
+|   |-- data/
+|   `-- visualizations/
+|-- frontend/
+|   |-- src/
+|   |   |-- App.jsx
+|   |   `-- components/
+|   `-- package.json
+|-- models/
+|-- test_data/
+|-- visualizations/
+`-- README.md
 ```
 
----
+## Troubleshooting
 
-## 🔧 Troubleshooting
+### Model not found
 
-### ❌ Port Already in Use
+If the backend cannot find the trained model, retrain it:
 
-**Backend (Port 5000):**
 ```powershell
-# Check what's using port 5000
-netstat -ano | findstr :5000
-
-# Kill the process (replace <PID> with actual number)
-taskkill /PID <PID> /F
-```
-
-**Frontend (Port 5173):**
-```powershell
-# Check what's using port 5173
-netstat -ano | findstr :5173
-
-# Vite will auto-assign a different port if 5173 is busy
-```
-
-### ❌ Backend Error: "Model not found"
-
-The integrated model should be at `backend/models/integrated_sales_model.pkl`.
-
-**Solution:**
-```powershell
-cd backend
+cd c:\Users\rohit\Desktop\sales-prediction-system\backend
 venv\Scripts\python.exe train_integrated_model.py
 ```
 
-This will retrain the model using all three datasets.
+### Frontend cannot connect
 
-### ❌ Frontend Error: "Failed to connect to server"
+Make sure the backend is running on port `5000`.
 
-**Check:**
-1. Backend is running on port 5000
-2. Look for: `Running on http://127.0.0.1:5000` in backend terminal
-3. If not running, restart backend server
+### Gemini insights fail
 
-### ❌ Dependencies Missing
+Make sure `GOOGLE_API_KEY` exists in `backend/.env`.
 
-**Backend:**
-```powershell
-cd backend
-venv\Scripts\pip install -r requirements.txt
-```
+## Summary
 
-**Frontend:**
-```powershell
-cd frontend
-npm install
-```
-
----
-
-## 📊 Model Information
-
-### Current Model: **Integrated Sales Model**
-- **Training Data:** 22,285 records
-- **Data Sources:** BigMart + Diwali Sales + Indian Retail
-- **Accuracy:** R² = 0.9359 (93.59%)
-- **Features:** 25+ (demographics, festivals, regions, temporal)
-
-### Top Predictive Features:
-1. **Gender** - Customer demographics
-2. **Year** - Temporal trends
-3. **Festival Season** - Diwali, Eid, Holi impact
-4. **Month** - Seasonal patterns
-5. **Region/State** - Geographic variations
-
----
-
-## 🎯 Use Cases
-
-### Scenario 1: CSV Bulk Upload
-"Upload 1 year of store sales data to get next 30-day forecast with festival overlays"
-
-### Scenario 2: Diwali Planning
-"Predict sales surge during Diwali week for inventory optimization"
-
-### Scenario 3: Regional Analysis
-"Compare sales patterns across North vs South India"
-
----
-
-## 📝 API Endpoints
-
-The backend provides these REST APIs:
-
-| Endpoint | Method | Purpose |
-|:---------|:-------|:--------|
-| `/api/predict` | POST | Single item prediction |
-| `/api/upload-csv` | POST | Upload historical sales CSV |
-| `/api/forecast` | POST | Generate time-series forecast |
-| `/api/analyze-patterns` | POST | Pattern analysis |
-| `/api/festival-impact` | GET | Upcoming festivals |
-| `/api/health` | GET | Server health check |
-
----
-
-## 🛑 Stopping the Application
-
-**Backend:**
-- Press `Ctrl + C` in the backend terminal
-
-**Frontend:**
-- Press `Ctrl + C` in the frontend terminal
-
----
-
-## 📚 Additional Documentation
-
-- [SETUP.md](SETUP.md) - Initial setup and installation
-- [QUICKSTART.md](QUICKSTART.md) - First-time configuration
-- [backend/data/README.md](backend/data/README.md) - Dataset documentation
-- Walkthrough artifact - Complete feature guide
-
----
-
-## 🎉 You're All Set!
-
-The system is now ready to forecast Indian retail sales with 93.59% accuracy! 
-
-**Need help?** Check the troubleshooting section above or review the documentation files.
+This project is designed to help retail businesses move from raw sales files to clear decisions. It combines forecasting, product-level exploration, festival-aware trend analysis, and multilingual AI explanations in one workflow.

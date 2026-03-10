@@ -18,23 +18,23 @@ print("=" * 70)
 calendar = IndianFestivalCalendar()
 
 # ========== 1. LOAD DATASETS ==========
-print("\n📂 Step 1: Loading Datasets...")
+print("\n[INFO] Step 1: Loading Datasets...")
 print("-" * 70)
 
 # BigMart (original dataset)
 bigmart = pd.read_csv('data/Train.csv')
-print(f"✅ BigMart: {bigmart.shape[0]:,} records")
+print(f"[OK] BigMart: {bigmart.shape[0]:,} records")
 
 # Diwali Sales
 diwali = pd.read_csv('data/diwali_sales/Diwali Sales Data.csv', encoding='latin-1')
-print(f"✅ Diwali Sales: {diwali.shape[0]:,} records")
+print(f"[OK] Diwali Sales: {diwali.shape[0]:,} records")
 
 # Indian Retail
 retail = pd.read_excel('data/indian_retail/INDIA_RETAIL_DATA.xlsx')
-print(f"✅ Indian Retail: {retail.shape[0]:,} records")
+print(f"[OK] Indian Retail: {retail.shape[0]:,} records")
 
 # ========== 2. PROCESS DIWALI SALES DATA ==========
-print("\n🎆 Step 2: Processing Diwali Sales Data...")
+print("\n[INFO] Step 2: Processing Diwali Sales Data...")
 print("-" * 70)
 
 # Create a unified schema for Diwali data
@@ -55,7 +55,7 @@ diwali_processed = pd.DataFrame({
 print(f"Processed Diwali data: {diwali_processed.shape}")
 
 # ========== 3. PROCESS INDIAN RETAIL DATA ==========
-print("\n🏪 Step 3: Processing Indian Retail Data...")
+print("\n[INFO] Step 3: Processing Indian Retail Data...")
 print("-" * 70)
 
 # Standardize Indian Retail data
@@ -76,7 +76,7 @@ retail_processed = pd.DataFrame({
 print(f"Processed Indian Retail data: {retail_processed.shape}")
 
 # ========== 4. PROCESS BIGMART DATA ==========
-print("\n🛒 Step 4: Processing BigMart Data...")
+print("\n[INFO] Step 4: Processing BigMart Data...")
 print("-" * 70)
 
 # BigMart doesn't have dates, assign synthetic dates (2018 baseline)
@@ -98,7 +98,7 @@ bigmart_processed = pd.DataFrame({
 print(f"Processed BigMart data: {bigmart_processed.shape}")
 
 # ========== 5. ADD FESTIVAL FEATURES TO ALL DATASETS ==========
-print("\n🎉 Step 5: Adding Festival Features...")
+print("\n[INFO] Step 5: Adding Festival Features...")
 print("-" * 70)
 
 def add_festival_features(df):
@@ -127,10 +127,10 @@ diwali_processed = add_festival_features(diwali_processed)
 retail_processed = add_festival_features(retail_processed)
 bigmart_processed = add_festival_features(bigmart_processed)
 
-print("✅ Festival features added to all datasets")
+print("[OK] Festival features added to all datasets")
 
 # ========== 6. CREATE UNIFIED DATASET ==========
-print("\n🔗 Step 6: Creating Unified Dataset...")
+print("\n[INFO] Step 6: Creating Unified Dataset...")
 print("-" * 70)
 
 # Add source identifier
@@ -151,13 +151,13 @@ unified_data = pd.concat([
     bigmart_processed[common_cols + ['item_mrp', 'outlet_size', 'outlet_type']]
 ], axis=0, ignore_index=True, sort=False)
 
-print(f"✅ Unified dataset created: {unified_data.shape}")
+print(f"[OK] Unified dataset created: {unified_data.shape}")
 print(f"   - Total records: {len(unified_data):,}")
 print(f"   - Date range: {unified_data['date'].min()} to {unified_data['date'].max()}")
 print(f"   - Columns: {len(unified_data.columns)}")
 
 # ========== 7. FEATURE ENGINEERING ==========
-print("\n🔧 Step 7: Feature Engineering...")
+print("\n[INFO] Step 7: Feature Engineering...")
 print("-" * 70)
 
 # Encode categorical variables
@@ -173,7 +173,7 @@ for col in categorical_features:
         unified_data[col] = unified_data[col].fillna('Unknown')
         unified_data[f'{col}_encoded'] = le.fit_transform(unified_data[col].astype(str))
         encoders[col] = le
-        print(f"   ✅ Encoded {col}: {len(le.classes_)} categories")
+        print(f"   [OK] Encoded {col}: {len(le.classes_)} categories")
 
 # Fill missing numerical values
 numerical_features = ['item_mrp', 'profit', 'discount']
@@ -181,23 +181,23 @@ for col in numerical_features:
     if col in unified_data.columns:
         unified_data[col] = unified_data[col].fillna(unified_data[col].median())
 
-print(f"\n✅ Feature engineering complete")
+print(f"\n[OK] Feature engineering complete")
 
 # ========== 8. SAVE PROCESSED DATA ==========
-print("\n💾 Step 8: Saving Processed Data...")
+print("\n[INFO] Step 8: Saving Processed Data...")
 print("-" * 70)
 
 # Save unified dataset
 unified_data.to_csv('data/unified_training_data.csv', index=False)
-print(f"✅ Saved: data/unified_training_data.csv ({len(unified_data):,} records)")
+print(f"[OK] Saved: data/unified_training_data.csv ({len(unified_data):,} records)")
 
 # Save encoders
 with open('models/unified_encoders.pkl', 'wb') as f:
     pickle.dump(encoders, f)
-print(f"✅ Saved: models/unified_encoders.pkl ({len(encoders)} encoders)")
+print(f"[OK] Saved: models/unified_encoders.pkl ({len(encoders)} encoders)")
 
 # ========== 9. GENERATE SUMMARY ==========
-print("\n📊 Step 9: Data Summary...")
+print("\n[INFO] Step 9: Data Summary...")
 print("=" * 70)
 
 summary = unified_data.groupby('data_source').agg({
@@ -217,9 +217,9 @@ for source in unified_data['data_source'].unique():
     print(f"  {source}: {subset['date'].min().date()} to {subset['date'].max().date()}")
 
 print("\n" + "=" * 70)
-print("✅ DATA PROCESSING COMPLETE!")
+print("[OK] DATA PROCESSING COMPLETE!")
 print("=" * 70)
-print(f"\n📁 Output Files:")
+print(f"\n[INFO] Output Files:")
 print(f"   1. data/unified_training_data.csv - {len(unified_data):,} records")
 print(f"   2. models/unified_encoders.pkl - {len(encoders)} encoders")
-print(f"\n🚀 Ready for model training!")
+print(f"\n[INFO] Ready for model training!")

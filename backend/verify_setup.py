@@ -27,14 +27,14 @@ def check_imports():
     for module, name in packages.items():
         try:
             __import__(module)
-            print(f"✅ {name:20} - OK")
+            print(f"[OK] {name:20} - OK")
         except ImportError as e:
-            print(f"❌ {name:20} - MISSING")
+            print(f"[MISSING] {name:20} - MISSING")
             all_good = False
     
     print("\n" + "=" * 60)
     if all_good:
-        print("✅ ALL DEPENDENCIES INSTALLED SUCCESSFULLY!")
+        print("[OK] ALL DEPENDENCIES INSTALLED SUCCESSFULLY!")
         print("=" * 60)
         print("\n📋 NEXT STEPS:")
         print("1. Add Train.csv to the data/ folder")
@@ -44,7 +44,7 @@ def check_imports():
         print("5. Open http://localhost:5173 in your browser")
         return True
     else:
-        print("❌ SOME DEPENDENCIES ARE MISSING")
+        print("[ERROR] SOME DEPENDENCIES ARE MISSING")
         print("=" * 60)
         print("\nRun: pip install -r requirements.txt")
         return False

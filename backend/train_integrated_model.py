@@ -18,16 +18,16 @@ print("INTEGRATED MODEL TRAINING - INDIAN RETAIL FORECASTING")
 print("=" * 70)
 
 # ========== 1. LOAD UNIFIED DATA ==========
-print("\n📂 Step 1: Loading Unified Dataset...")
+print("\n[INFO] Step 1: Loading Unified Dataset...")
 print("-" * 70)
 
 df = pd.read_csv('data/unified_training_data.csv')
-print(f"✅ Loaded: {len(df):,} records")
+print(f"[OK] Loaded: {len(df):,} records")
 print(f"   Columns: {len(df.columns)}")
 print(f"   Date range: {df['date'].min()} to {df['date'].max()}")
 
 #========== 2. SELECT FEATURES ==========
-print("\n🔧 Step 2: Feature Selection...")
+print("\n[INFO] Step 2: Feature Selection...")
 print("-" * 70)
 
 # Target variable
@@ -54,14 +54,14 @@ for col in numerical_cols:
 feature_columns = [col for col in feature_columns 
                   if col in df.columns and df[col].notna().any()]
 
-print(f"✅ Selected {len(feature_columns)} features:")
+print(f"[OK] Selected {len(feature_columns)} features:")
 for feat in feature_columns[:10]:
     print(f"   - {feat}")
 if len(feature_columns) > 10:
     print(f"   ... and {len(feature_columns) - 10} more")
 
 # ========== 3. PREPARE DATA ==========
-print("\n📊 Step 3: Preparing Training Data...")
+print("\n[INFO] Step 3: Preparing Training Data...")
 print("-" * 70)
 
 # Drop rows with missing target
@@ -72,11 +72,11 @@ print(f"Records after cleaning: {len(df_clean):,}")
 X = df_clean[feature_columns].fillna(0)
 Y = df_clean[target]
 
-print(f"✅ Features shape: {X.shape}")
-print(f"✅ Target shape: {Y.shape}")
+print(f"[OK] Features shape: {X.shape}")
+print(f"[OK] Target shape: {Y.shape}")
 
 # ========== 4. TRAIN-TEST SPLIT ==========
-print("\n✂️ Step 4: Train-Test Split...")
+print("\n[INFO] Step 4: Train-Test Split...")
 print("-" * 70)
 
 X_train, X_test, Y_train, Y_test = train_test_split(
@@ -87,7 +87,7 @@ print(f"Training set: {X_train.shape[0]:,} samples")
 print(f"Testing set: {X_test.shape[0]:,} samples")
 
 # ========== 5. TRAIN MODEL ==========
-print("\n🤖 Step 5: Training Enhanced XGBoost Model...")
+print("\n[INFO] Step 5: Training Enhanced XGBoost Model...")
 print("-" * 70)
 
 model = XGBRegressor(
@@ -103,7 +103,7 @@ model = XGBRegressor(
 
 print("Training in progress...")
 model.fit(X_train, Y_train)
-print("✅ Model training complete!")
+print("[OK] Model training complete!")
 
 # ========== 6. EVALUATE MODEL ==========
 print("\n📈 Step 6: Model Evaluation...")
@@ -132,7 +132,7 @@ print(f"   MAE: {test_mae:.2f}")
 print(f"   RMSE: {test_rmse:.2f}")
 
 # ========== 7. FEATURE IMPORTANCE ==========
-print("\n🔍 Step 7: Feature Importance Analysis...")
+print("\n[INFO] Step 7: Feature Importance Analysis...")
 print("-" * 70)
 
 feature_importance = pd.DataFrame({
@@ -155,7 +155,7 @@ plt.xlabel('Importance Score')
 plt.tight_layout()
 plt.savefig('visualizations/integrated_feature_importance.png', dpi=300)
 plt.close()
-print("✅ Saved: visualizations/integrated_feature_importance.png")
+print("[OK] Saved: visualizations/integrated_feature_importance.png")
 
 # Actual vs Predicted
 plt.figure(figsize=(10, 6))
@@ -169,10 +169,10 @@ plt.legend()
 plt.tight_layout()
 plt.savefig('visualizations/integrated_actual_vs_predicted.png', dpi=300)
 plt.close()
-print("✅ Saved: visualizations/integrated_actual_vs_predicted.png")
+print("[OK] Saved: visualizations/integrated_actual_vs_predicted.png")
 
 # ========== 8. SAVE MODEL ==========
-print("\n💾 Step 8: Saving Enhanced Model...")
+print("\n[INFO] Step 8: Saving Enhanced Model...")
 print("-" * 70)
 
 # Load encoders
@@ -204,14 +204,14 @@ model_package = {
 with open('models/integrated_sales_model.pkl', 'wb') as f:
     pickle.dump(model_package, f)
 
-print(f"✅ Saved: models/integrated_sales_model.pkl")
+print(f"[OK] Saved: models/integrated_sales_model.pkl")
 print(f"   Model type: XGBoost Regressor")
 print(f"   Features: {len(feature_columns)}")
 print(f"   Training records: {len(X_train):,}")
 print(f"   Test R²: {test_r2:.4f}")
 
 # ========== 9. COMPARISON WITH ORIGINAL ==========
-print("\n📊 Step 9: Comparison with Original Model...")
+print("\n[INFO] Step 9: Comparison with Original Model...")
 print("=" * 70)
 
 try:
@@ -230,33 +230,33 @@ try:
     if original_performance.get('test_r2'):
         improvement = ((test_r2 - original_performance['test_r2']) / 
                       original_performance['test_r2'] * 100)
-        print(f"\n{'🎉' if improvement > 0 else ''} R² Improvement: {improvement:+.2f}%")
+        print(f"\n[SUCCESS] R2 Improvement: {improvement:+.2f}%")
 except:
     print("\nOriginal model not found for comparison")
 
 # ========== 10. SUMMARY ==========
 print("\n" + "=" * 70)
-print("✅ MODEL TRAINING COMPLETE!")
+print("[OK] MODEL TRAINING COMPLETE!")
 print("=" * 70)
 
-print(f"\n📦 Model Package Includes:")
+print(f"\n[INFO] Model Package Includes:")
 print(f"   - XGBoost model with {len(feature_columns)} features")
 print(f"   - {len(encoders)} category encoders")
 print(f"   - Festival calendar integration")
 print(f"   - Demographic features (age, gender, location)")
 print(f"   - Regional features (state, zone, city)")
 
-print(f"\n🎯 Performance Metrics:")
-print(f"   Test R² Score: {test_r2:.4f}")
+print(f"\n[INFO] Performance Metrics:")
+print(f"   Test R2 Score: {test_r2:.4f}")
 print(f"   Test MAE: {test_mae:.2f}")
 print(f"   Test RMSE: {test_rmse:.2f}")
 
-print(f"\n📁 Output Files:")
+print(f"\n[INFO] Output Files:")
 print(f"   1. models/integrated_sales_model.pkl")
 print(f"   2. visualizations/integrated_feature_importance.png")
 print(f"   3. visualizations/integrated_actual_vs_predicted.png")
 
-print(f"\n🚀 Next Steps:")
+print(f"\n[INFO] Next Steps:")
 print(f"   - Update app.py to use integrated model")
 print(f"   - Test predictions with new features")
 print(f"   - Deploy to production!")

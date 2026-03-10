@@ -1,70 +1,57 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import Papa from 'papaparse';
 
-function FileUpload({ onFileUploaded }) {
-    const onDrop = useCallback((acceptedFiles) => {
-        const file = acceptedFiles[0];
-        if (!file) return;
+function FileUpload({ onFileSelected, disabled = false }) {
+  const onDrop = useCallback(
+    (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      if (!file || disabled) {
+        return;
+      }
 
-        // Parse CSV with PapaParse
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                console.log('Parsed CSV data:', results.data);
-                onFileUploaded(results.data, file.name);
-            },
-            error: (error) => {
-                console.error('Error parsing CSV:', error);
-                alert('Failed to parse CSV file. Please check the format.');
-            }
-        });
-    }, [onFileUploaded]);
+      onFileSelected(file);
+    },
+    [disabled, onFileSelected],
+  );
 
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: {
-            'text/csv': ['.csv'],
-            'application/vnd.ms-excel': ['.xls'],
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
-        },
-        multiple: false
-    });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'text/csv': ['.csv'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+    },
+    multiple: false,
+    disabled,
+  });
 
-    return (
-        <div
-            {...getRootProps()}
-            className={`
-        border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
-        transition-all duration-300 ease-in-out
-        ${isDragActive
-                    ? 'border-blue-500 bg-blue-50 scale-105'
-                    : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                }
-      `}
-        >
-            <input {...getInputProps()} />
-            <div className="space-y-4">
-                <div className="text-6xl">📊</div>
-                {isDragActive ? (
-                    <p className="text-lg font-medium text-blue-600">Drop your file here...</p>
-                ) : (
-                    <>
-                        <p className="text-lg font-medium text-gray-700">
-                            Drag & drop your sales data file here
-                        </p>
-                        <p className="text-sm text-gray-500">
-                            or click to select a file
-                        </p>
-                        <p className="text-xs text-gray-400 mt-2">
-                            Supported formats: CSV, XLS, XLSX
-                        </p>
-                    </>
-                )}
-            </div>
-        </div>
-    );
+  return (
+    <div
+      {...getRootProps()}
+      className={[
+        'rounded-3xl border-2 border-dashed px-8 py-12 text-center transition',
+        disabled
+          ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+          : isDragActive
+            ? 'cursor-pointer border-emerald-500 bg-emerald-50 text-emerald-700'
+            : 'cursor-pointer border-slate-300 bg-slate-50 text-slate-700 hover:border-emerald-400 hover:bg-white',
+      ].join(' ')}
+    >
+      <input {...getInputProps()} />
+      <div className="space-y-3">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+          Sales Data Upload
+        </p>
+        <h3 className="text-2xl font-semibold text-slate-900">
+          {isDragActive ? 'Drop the file to upload it' : 'Drag a CSV or XLSX file here'}
+        </h3>
+        <p className="mx-auto max-w-2xl text-sm text-slate-600">
+          The backend will normalize dates, detect sales columns, infer dataset granularity, and prepare
+          product-level indexing for search.
+        </p>
+        <p className="text-xs text-slate-500">Supported formats: .csv and .xlsx</p>
+      </div>
+    </div>
+  );
 }
 
 export default FileUpload;
