@@ -45,8 +45,8 @@ class IndianFestivalCalendar:
     
     def get_festival_category(self, holiday_name):
         """Categorize holiday into major festival groups"""
-        if not holiday_name:
-            return None
+        # Ensure holiday_name is a string before calling .lower()
+        holiday_name = str(holiday_name)
         
         for category, keywords in self.major_festivals.items():
             for keyword in keywords:
