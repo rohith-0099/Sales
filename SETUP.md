@@ -34,7 +34,7 @@ cd backend
 
 # Create virtual environment (Windows)
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate  <!-- venv is a Python virtual environment directory -->
 
 # Create virtual environment (Mac/Linux)
 python3 -m venv venv

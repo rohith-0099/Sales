@@ -20,9 +20,21 @@ const initialLegacyForm = {
   Outlet_Type: 'Supermarket Type1',
 };
 
-function formatCurrency(value) {
+const MARKETS = [
+  { code: 'IN', label: 'India', currency: 'INR', locale: 'en-IN' },
+  { code: 'US', label: 'United States', currency: 'USD', locale: 'en-US' },
+  { code: 'GB', label: 'United Kingdom', currency: 'GBP', locale: 'en-GB' },
+  { code: 'AE', label: 'UAE', currency: 'AED', locale: 'en-AE' },
+  { code: 'AU', label: 'Australia', currency: 'AUD', locale: 'en-AU' },
+  { code: 'CA', label: 'Canada', currency: 'CAD', locale: 'en-CA' },
+];
+
+function formatCurrency(value, marketCode = 'IN') {
+  const market = MARKETS.find(m => m.code === marketCode) || MARKETS[0];
   const numericValue = Number(value ?? 0);
-  return new Intl.NumberFormat('en-IN', {
+  return new Intl.NumberFormat(market.locale, {
+    style: 'currency',
+    currency: market.currency,
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
   }).format(Number.isFinite(numericValue) ? numericValue : 0);
@@ -83,7 +95,7 @@ function ProductSuggestions({ suggestions, selectedProduct, onSelect }) {
   );
 }
 
-function TopProductsTable({ products, onFocus }) {
+function TopProductsTable({ products, onFocus, marketCode }) {
   if (!products?.length) {
     return null;
   }
@@ -114,8 +126,8 @@ function TopProductsTable({ products, onFocus }) {
               <tr key={product.product} className="border-b border-slate-100 last:border-0">
                 <td className="py-3 pr-4 text-slate-600">{product.rank}</td>
                 <td className="py-3 pr-4 font-medium text-slate-900">{product.product}</td>
-                <td className="py-3 pr-4 text-slate-700">{formatCurrency(product.total_sales)}</td>
-                <td className="py-3 pr-4 text-slate-700">{formatCurrency(product.average_sales)}</td>
+                <td className="py-3 pr-4 text-slate-700">{formatCurrency(product.total_sales, marketCode)}</td>
+                <td className="py-3 pr-4 text-slate-700">{formatCurrency(product.average_sales, marketCode)}</td>
                 <td className="py-3 pr-4 text-slate-700">{product.records}</td>
                 <td className="py-3">
                   <button
@@ -135,7 +147,7 @@ function TopProductsTable({ products, onFocus }) {
   );
 }
 
-function TrendTable({ periods }) {
+function TrendTable({ periods, marketCode }) {
   if (!periods?.length) {
     return null;
   }
@@ -158,8 +170,8 @@ function TrendTable({ periods }) {
             {periods.slice(-8).map((period) => (
               <tr key={period.label} className="border-b border-slate-100 last:border-0">
                 <td className="py-3 pr-4 font-medium text-slate-900">{period.label}</td>
-                <td className="py-3 pr-4 text-slate-700">{formatCurrency(period.total_sales)}</td>
-                <td className="py-3 pr-4 text-slate-700">{formatCurrency(period.average_sales)}</td>
+                <td className="py-3 pr-4 text-slate-700">{formatCurrency(period.total_sales, marketCode)}</td>
+                <td className="py-3 pr-4 text-slate-700">{formatCurrency(period.average_sales, marketCode)}</td>
                 <td className={`py-3 ${period.growth_pct >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                   {formatPercent(period.growth_pct)}
                 </td>
@@ -173,6 +185,7 @@ function TrendTable({ periods }) {
 }
 
 function App() {
+  const [market, setMarket] = useState('IN');
   const [uploadId, setUploadId] = useState('');
   const [fileName, setFileName] = useState('');
   const [uploadStats, setUploadStats] = useState(null);
@@ -186,7 +199,9 @@ function App() {
   const [forecastData, setForecastData] = useState([]);
   const [forecastSummary, setForecastSummary] = useState(null);
   const [forecastUnit, setForecastUnit] = useState('days');
+  const [forecastHorizon, setForecastHorizon] = useState(30);
   const [patternAnalysis, setPatternAnalysis] = useState(null);
+  const [festivals, setFestivals] = useState([]);
   const [aiLanguage, setAiLanguage] = useState('English');
   const [aiInsights, setAiInsights] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -254,6 +269,7 @@ function App() {
     resetAnalysisState();
     setError('');
     setStatusMessage('');
+    setFestivals([]);
   }
 
   async function handleFileSelected(file) {
@@ -292,7 +308,14 @@ function App() {
           rank: null,
         })),
       );
-      setStatusMessage('Dataset uploaded successfully. Run analysis to generate forecasts and trends.');
+        
+        // Auto-set default horizon based on granularity
+        const gran = response.data.granularity || 'daily';
+        if (gran === 'monthly') setForecastHorizon(12);
+        else if (gran === 'yearly') setForecastHorizon(3);
+        else setForecastHorizon(30);
+
+        setStatusMessage('Dataset uploaded successfully. Run analysis to generate forecasts and trends.');
     } catch (requestError) {
       setUploadId('');
       setFileName('');
@@ -335,6 +358,8 @@ function App() {
       const payload = {
         upload_id: uploadId,
         selected_product: normalizedProduct || null,
+        country_code: market,
+        forecast_periods: forecastHorizon,
       };
 
       const [forecastResponse, analysisResponse] = await Promise.all([
@@ -351,11 +376,36 @@ function App() {
 
       setHistoricalSeries(forecastResponse.data.historical_series || []);
       setForecastData(forecastResponse.data.forecast || []);
-      setForecastSummary(forecastResponse.data.summary || null);
+      setForecastSummary(
+        forecastResponse.data.summary
+          ? {
+              ...forecastResponse.data.summary,
+              confidence: forecastResponse.data.confidence || null,
+              metrics: forecastResponse.data.metrics || null,
+            }
+          : null,
+      );
       setForecastUnit(forecastResponse.data.forecast_unit || 'days');
       setPatternAnalysis(analysisResponse.data.patterns || null);
       setGranularity(forecastResponse.data.granularity || granularity);
       setSelectedProduct(forecastResponse.data.selected_product || normalizedProduct || '');
+      
+      // Fetch holidays for the chart
+      const start = forecastResponse.data.historical_series?.[0]?.date;
+      const end = forecastResponse.data.forecast?.[forecastResponse.data.forecast.length - 1]?.date;
+      if (start && end) {
+        try {
+          const holidaysRes = await axios.get(`${API_URL}/holidays`, {
+            params: { market, start, end }
+          });
+          if (holidaysRes.data.success) {
+            setFestivals(holidaysRes.data.holidays || []);
+          }
+        } catch (e) {
+          console.error("Failed to fetch holidays", e);
+        }
+      }
+
       setStatusMessage(
         forecastResponse.data.selected_product
           ? `Analysis ready for ${forecastResponse.data.selected_product}.`
@@ -422,19 +472,30 @@ function App() {
 
     const summary = [
       `Granularity: ${granularity}.`,
-      `Current run rate: ${formatCurrency(patternAnalysis.summary.current_run_rate)}.`,
-      `Latest sales: ${formatCurrency(patternAnalysis.summary.latest_sales)}.`,
+      `Current run rate: ${formatCurrency(patternAnalysis.summary.current_run_rate, market)}.`,
+      `Latest sales: ${formatCurrency(patternAnalysis.summary.latest_sales, market)}.`,
       `Trend direction: ${patternAnalysis.summary.trend_direction}.`,
       `Projected direction: ${forecastSummary.projected_direction}.`,
-      `Projected cumulative sales: ${formatCurrency(forecastSummary.cumulative_predicted_sales)}.`,
+      `Projected cumulative sales: ${formatCurrency(forecastSummary.cumulative_predicted_sales, market)}.`,
     ].join(' ');
+    const marketDetails = MARKETS.find((entry) => entry.code === market) || MARKETS[0];
+    const festivalSignal = festivals.length
+      ? festivals.slice(0, 2).map((festival) => festival.festival).join(', ')
+      : 'None';
 
     try {
       const response = await axios.post(`${API_URL}/ai-insights`, {
         language: aiLanguage,
         product_name: selectedProduct || 'All products',
         summary,
+        total_sales: patternAnalysis.summary.total_sales,
+        trend: `${patternAnalysis.summary.trend_direction}; forecast ${forecastSummary.projected_direction}`,
+        growth_rate: patternAnalysis.summary.growth_pct,
+        festival: festivalSignal,
+        granularity,
+        market: marketDetails.label,
         context: buildAiContext(),
+        country_code: market,
       });
 
       if (!response.data.success) {
@@ -442,7 +503,7 @@ function App() {
       }
 
       if (response.data.fallback) {
-        setStatusMessage('Gemini quota is unavailable right now. Showing a local fallback insight summary.');
+        setStatusMessage('The AI service is unavailable right now. Showing a local fallback insight summary.');
       }
       setAiInsights(response.data.insights || '');
     } catch (requestError) {
@@ -485,15 +546,61 @@ function App() {
     }
   }
 
+  function downloadForecastReport() {
+    if (!forecastData.length) return;
+    
+    const productLabel = selectedProduct || 'Total_Store';
+    const today = new Date().toISOString().split('T')[0];
+    const fileName = `${productLabel.replace(/[^a-z0-9]/gi, '_')}_forecast_${today}.csv`;
+    
+    const headers = ['date', 'predicted_sales', 'lower_bound', 'upper_bound', 'is_festival', 'festival_name'];
+    const rows = forecastData.map(row => [
+      row.date,
+      row.predicted_sales,
+      row.lower_bound,
+      row.upper_bound,
+      row.is_festival ? 'YES' : 'NO',
+      row.festival_name || ''
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   const analysisReady = Boolean(patternAnalysis && forecastSummary);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(253,224,71,0.18),_transparent_28%),linear-gradient(180deg,_#fffef6_0%,_#f8fafc_42%,_#eef2ff_100%)]">
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-600">
-            Retail Intelligence Platform
-          </p>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-600">
+              Retail Intelligence Platform
+            </p>
+            <div className="flex items-center gap-3">
+              <label htmlFor="market-select" className="text-sm font-medium text-slate-700">Market:</label>
+              <select
+                id="market-select"
+                value={market}
+                onChange={(e) => setMarket(e.target.value)}
+                className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-900"
+              >
+                {MARKETS.map(m => <option key={m.code} value={m.code}>{m.label} ({m.currency})</option>)}
+              </select>
+            </div>
+          </div>
           <div className="mt-4 grid gap-6 lg:grid-cols-[1.7fr_1fr] lg:items-end">
             <div>
               <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
@@ -502,7 +609,7 @@ function App() {
               <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
                 The dashboard accepts daily, weekly, monthly, or yearly retail sales data, identifies product
                 entities automatically, generates forecasts, and explains the pattern in multiple languages with
-                Gemini.
+                AI.
               </p>
             </div>
             <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
@@ -556,14 +663,14 @@ function App() {
                 />
                 <MetricCard
                   label="Total historical sales"
-                  value={formatCurrency(uploadStats.total_sales)}
+                  value={formatCurrency(uploadStats.total_sales, market)}
                   hint={`${uploadStats.rows} parsed rows`}
                   accent="emerald"
                 />
                 <MetricCard
                   label="Average sales"
-                  value={formatCurrency(uploadStats.average_sales)}
-                  hint={`Latest sale ${formatCurrency(uploadStats.latest_sales)}`}
+                  value={formatCurrency(uploadStats.average_sales, market)}
+                  hint={`Latest sale ${formatCurrency(uploadStats.latest_sales, market)}`}
                 />
                 <MetricCard
                   label="Product coverage"
@@ -614,6 +721,32 @@ function App() {
                           setProductQuery(value);
                         }}
                       />
+                      
+                      <div className="mt-6">
+                        <span className="mb-2 block text-sm font-medium text-slate-700">Forecast Horizon</span>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { label: '7 Days', value: 7 },
+                            { label: '30 Days', value: 30 },
+                            { label: '90 Days', value: 90 },
+                            { label: '12 Months', value: 12 },
+                            { label: '1 Year', value: 365 },
+                          ].map((opt) => (
+                            <button
+                              key={opt.label}
+                              type="button"
+                              onClick={() => setForecastHorizon(opt.value)}
+                              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                                forecastHorizon === opt.value
+                                  ? 'bg-amber-500 text-white'
+                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -681,14 +814,14 @@ function App() {
               <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <MetricCard
                   label="Total sales"
-                  value={formatCurrency(patternAnalysis.summary.total_sales)}
+                  value={formatCurrency(patternAnalysis.summary.total_sales, market)}
                   hint={`Range ${patternAnalysis.summary.start_date} to ${patternAnalysis.summary.end_date}`}
                   accent="emerald"
                 />
                 <MetricCard
                   label="Current run rate"
-                  value={formatCurrency(patternAnalysis.summary.current_run_rate)}
-                  hint={`Previous run rate ${formatCurrency(patternAnalysis.summary.previous_run_rate)}`}
+                  value={formatCurrency(patternAnalysis.summary.current_run_rate, market)}
+                  hint={`Previous run rate ${formatCurrency(patternAnalysis.summary.previous_run_rate, market)}`}
                 />
                 <MetricCard
                   label="Growth"
@@ -698,7 +831,7 @@ function App() {
                 />
                 <MetricCard
                   label="Forecast total"
-                  value={formatCurrency(forecastSummary.cumulative_predicted_sales)}
+                  value={formatCurrency(forecastSummary.cumulative_predicted_sales, market)}
                   hint={`Across the next ${forecastData.length} ${forecastUnit}`}
                   accent="amber"
                 />
@@ -708,12 +841,12 @@ function App() {
                 <section className="grid gap-4 md:grid-cols-3">
                   <MetricCard
                     label="Current average sales"
-                    value={formatCurrency(forecastSummary.comparison_to_current.current_average_sales)}
+                    value={formatCurrency(forecastSummary.comparison_to_current.current_average_sales, market)}
                     hint={`Based on the latest ${forecastSummary.comparison_to_current.baseline_window_points} data points`}
                   />
                   <MetricCard
                     label="Predicted average sales"
-                    value={formatCurrency(forecastSummary.comparison_to_current.forecast_average_sales)}
+                    value={formatCurrency(forecastSummary.comparison_to_current.forecast_average_sales, market)}
                     hint={`Expected average across the next ${forecastData.length} ${forecastUnit}`}
                     accent="amber"
                   />
@@ -737,12 +870,12 @@ function App() {
                     />
                     <MetricCard
                       label="Product sales"
-                      value={formatCurrency(patternAnalysis.selected_product_stats.total_sales)}
+                      value={formatCurrency(patternAnalysis.selected_product_stats.total_sales, market)}
                       hint={`${patternAnalysis.selected_product_stats.records} records`}
                     />
                     <MetricCard
                       label="Average product sale"
-                      value={formatCurrency(patternAnalysis.selected_product_stats.average_sales)}
+                      value={formatCurrency(patternAnalysis.selected_product_stats.average_sales, market)}
                       hint="Based on filtered records"
                     />
                     <MetricCard
@@ -757,12 +890,27 @@ function App() {
               <ForecastChart
                 historicalData={historicalSeries}
                 forecastData={forecastData}
-                festivals={[]}
+                festivals={festivals}
                 granularity={granularity}
+                marketCode={market}
+                confidence={forecastSummary?.confidence}
+                metrics={forecastSummary?.metrics}
               />
 
+              <div className="flex justify-end">
+                <button
+                  onClick={downloadForecastReport}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white shadow-lg transition hover:bg-emerald-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  Download Forecast Report (.csv)
+                </button>
+              </div>
+
               <section className="grid gap-6 lg:grid-cols-2">
-                <TrendTable periods={patternAnalysis.period_trends} />
+                <TrendTable periods={patternAnalysis.period_trends} marketCode={market} />
 
                 <div className="space-y-6">
                   <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -775,14 +923,14 @@ function App() {
                       {patternAnalysis.trend_highlights.best_period ? (
                         <p>
                           Best period: <span className="font-semibold text-slate-900">{patternAnalysis.trend_highlights.best_period.label}</span>{' '}
-                          with {formatCurrency(patternAnalysis.trend_highlights.best_period.total_sales)} in sales.
+                          with {formatCurrency(patternAnalysis.trend_highlights.best_period.total_sales, market)} in sales.
                         </p>
                       ) : null}
                       {patternAnalysis.trend_highlights.weakest_period ? (
                         <p>
                           Weakest period:{' '}
                           <span className="font-semibold text-slate-900">{patternAnalysis.trend_highlights.weakest_period.label}</span>{' '}
-                          with {formatCurrency(patternAnalysis.trend_highlights.weakest_period.total_sales)} in sales.
+                          with {formatCurrency(patternAnalysis.trend_highlights.weakest_period.total_sales, market)} in sales.
                         </p>
                       ) : null}
                       <p>
@@ -791,7 +939,7 @@ function App() {
                       </p>
                       <p>
                         Forecast peak: <span className="font-semibold text-slate-900">{forecastSummary.peak_forecast_date}</span>{' '}
-                        at {formatCurrency(forecastSummary.peak_forecast_sales)}.
+                        at {formatCurrency(forecastSummary.peak_forecast_sales, market)}.
                       </p>
                     </div>
                   </div>
@@ -802,12 +950,12 @@ function App() {
                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                       <MetricCard
                         label="Normal days"
-                        value={formatCurrency(patternAnalysis.festival_impact.average_sales_normal_days)}
+                        value={formatCurrency(patternAnalysis.festival_impact.average_sales_normal_days, market)}
                         hint="Average sales outside holidays"
                       />
                       <MetricCard
                         label="Festival days"
-                        value={formatCurrency(patternAnalysis.festival_impact.average_sales_festival_days)}
+                        value={formatCurrency(patternAnalysis.festival_impact.average_sales_festival_days, market)}
                         hint="Average sales on holidays"
                         accent="amber"
                       />
@@ -830,7 +978,7 @@ function App() {
                           >
                             <span>{festival.festival}</span>
                             <span className="font-semibold text-slate-900">
-                              {formatCurrency(festival.average_sales)}
+                              {formatCurrency(festival.average_sales, market)}
                             </span>
                           </div>
                         ))}
@@ -841,16 +989,16 @@ function App() {
               </section>
 
               {!selectedProduct ? (
-                <TopProductsTable products={patternAnalysis.top_products} onFocus={focusOnProduct} />
+                <TopProductsTable products={patternAnalysis.top_products} onFocus={focusOnProduct} marketCode={market} />
               ) : null}
 
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">AI Analyst</p>
-                    <h3 className="text-2xl font-semibold text-slate-900">Gemini sales explanation</h3>
+                    <h3 className="text-2xl font-semibold text-slate-900">AI analyst brief</h3>
                     <p className="mt-2 text-sm text-slate-600">
-                      Ask Gemini to explain the trend, identify where to focus, and suggest actions to improve sales.
+                      Get a short brief with the core problem, where to focus now, and a future sales strategy.
                     </p>
                   </div>
                   <div className="w-full md:w-64">
@@ -869,6 +1017,7 @@ function App() {
                       <option>Bengali</option>
                       <option>Telugu</option>
                       <option>Tamil</option>
+                      <option>Malayalam</option>
                     </select>
                   </div>
                 </div>
@@ -879,7 +1028,7 @@ function App() {
                     disabled={aiLoading}
                     className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {aiLoading ? 'Generating insight' : 'Generate AI insight'}
+                    {aiLoading ? 'Generating brief' : 'Generate short brief'}
                   </button>
                 </div>
                 {aiInsights ? (
@@ -1018,7 +1167,7 @@ function App() {
             {legacyPrediction !== null ? (
               <div className="mt-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Prediction result</p>
-                <p className="mt-3 text-3xl font-semibold text-emerald-900">{formatCurrency(legacyPrediction)}</p>
+                <p className="mt-3 text-3xl font-semibold text-emerald-900">{formatCurrency(legacyPrediction, market)}</p>
               </div>
             ) : null}
           </section>

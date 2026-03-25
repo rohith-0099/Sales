@@ -172,9 +172,19 @@ def _is_likely_datetime_series(series: pd.Series) -> bool:
     if non_null.empty:
         return False
 
+    # Avoid treated plain small integers (like years) as nanosecond-based timestamps (1970)
+    if pd.api.types.is_integer_dtype(non_null):
+        if non_null.min() > 1000 and non_null.max() < 3000:
+            return False
+
     sample = non_null.head(25)
     parsed = pd.to_datetime(sample, errors="coerce")
-    return float(parsed.notna().mean()) >= 0.6
+    
+    # Check if we got something other than the 1970-01-01 epoch for all rows
+    if bool(parsed.notna().all()) and bool((parsed.dt.year == 1970).all()):
+        return False
+        
+    return bool(float(parsed.notna().mean()) >= 0.6)
 
 
 def _find_date_column(df: pd.DataFrame, column_map: dict[str, str]) -> str | None:
@@ -280,7 +290,12 @@ def infer_granularity(date_series: pd.Series, hint: str | None = None) -> str:
         return "monthly"
     if median_gap >= 6:
         return "weekly"
-    return hint or "daily"
+    
+    # If we have a hint (like 'yearly' from year-only columns) and few points, trust the hint
+    if hint and len(unique_dates) < 50:
+        return str(hint)
+
+    return str(hint or "daily")
 
 
 def _build_product_columns(df: pd.DataFrame, column_map: dict[str, str]) -> dict[str, Any]:
@@ -514,7 +529,7 @@ def filter_dataset_by_product(item: dict[str, Any], selected_product: str | None
         raise ValueError("This upload does not contain product identifiers to filter on.")
 
     matches = df["product_key"].fillna("").astype(str).str.lower() == product_value
-    if not matches.any():
+    if not bool(matches.any()):
         raise ValueError(f"Product `{selected_product}` was not found in the uploaded dataset.")
 
     resolved_product = str(df.loc[matches, "product_key"].iloc[0])

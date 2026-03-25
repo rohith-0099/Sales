@@ -7,24 +7,38 @@ from __future__ import annotations
 import json
 import os
 import pickle
-from functools import lru_cache
 from pathlib import Path
-
-import google.generativeai as genai
 import pandas as pd
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from analytics_engine import (
-    UploadStore,
-    analyze_dataset,
-    generate_forecast,
-    prepare_uploaded_dataframe,
-    read_uploaded_file,
-    search_products,
-)
-from indian_holidays import IndianFestivalCalendar
+try:
+    from .ai_engine import get_ai_insight
+    from .analytics_engine import (
+        UploadStore,
+        analyze_dataset,
+        generate_forecast,
+        prepare_uploaded_dataframe,
+        read_uploaded_file,
+        search_products,
+        filter_dataset_by_product,
+    )
+    from .market_holidays import get_calendar
+    from . import ensemble_engine
+except ImportError:
+    from ai_engine import get_ai_insight
+    from analytics_engine import (
+        UploadStore,
+        analyze_dataset,
+        generate_forecast,
+        prepare_uploaded_dataframe,
+        read_uploaded_file,
+        search_products,
+        filter_dataset_by_product,
+    )
+    from market_holidays import get_calendar
+    import ensemble_engine
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -39,7 +53,6 @@ model = None
 encoders = {}
 feature_columns = None
 model_type = "unloaded"
-festival_calendar = IndianFestivalCalendar()
 upload_store = UploadStore(
     ttl_minutes=int(os.getenv("UPLOAD_TTL_MINUTES", "90")),
     max_items=int(os.getenv("MAX_UPLOAD_SESSIONS", "25")),
@@ -85,6 +98,12 @@ def load_model() -> bool:
     except FileNotFoundError:
         print("[ERROR] No trained model was found in backend/models.")
         return False
+
+
+def ensure_model_loaded() -> bool:
+    if model is not None:
+        return True
+    return load_model()
 
 
 def preprocess_input(data: dict) -> pd.DataFrame:
@@ -138,6 +157,13 @@ def _resolve_item_from_payload(payload: dict) -> dict:
     }
 
 
+def _get_json_payload() -> dict:
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise ValueError("Request body must be valid JSON.")
+    return payload
+
+
 def _build_ai_prompt(language: str, product_name: str, context: dict | None, summary: str) -> str:
     context_text = json.dumps(context or {}, ensure_ascii=False, indent=2)
     return f"""
@@ -168,38 +194,6 @@ Rules:
 """
 
 
-@lru_cache(maxsize=1)
-def _list_supported_gemini_models() -> tuple[str, ...]:
-    supported_models = []
-    for model in genai.list_models():
-        methods = getattr(model, "supported_generation_methods", []) or []
-        if "generateContent" in methods:
-            supported_models.append(model.name)
-    return tuple(supported_models)
-
-
-def _resolve_gemini_model_name() -> str:
-    configured_name = os.getenv("GEMINI_MODEL", "").strip()
-    candidates = []
-
-    if configured_name:
-        candidates.append(configured_name)
-        if not configured_name.startswith("models/"):
-            candidates.append(f"models/{configured_name}")
-
-    candidates.extend(DEFAULT_GEMINI_MODEL_CANDIDATES)
-    available_models = set(_list_supported_gemini_models())
-
-    for candidate in candidates:
-        if candidate in available_models:
-            return candidate
-
-    raise RuntimeError(
-        "No supported Gemini text model was found for this API key. "
-        "Set GEMINI_MODEL in backend/.env to one of the models returned by list_models()."
-    )
-
-
 def _format_metric(value, suffix: str = "") -> str:
     if value is None:
         return "0"
@@ -213,111 +207,6 @@ def _format_metric(value, suffix: str = "") -> str:
     if numeric_value.is_integer():
         return f"{int(numeric_value)}{suffix}"
     return f"{numeric_value:.2f}{suffix}"
-
-
-def _build_fallback_ai_insights(
-    language: str,
-    product_name: str,
-    context: dict | None,
-    failure_reason: str,
-) -> str:
-    dataset = (context or {}).get("dataset", {})
-    analysis = (context or {}).get("analysis", {})
-    forecast = (context or {}).get("forecast", {})
-    summary = analysis.get("summary", {})
-    festival_impact = analysis.get("festival_impact", {})
-    selected_product = analysis.get("selected_product_stats")
-    top_products = analysis.get("top_products") or []
-    forecast_summary = forecast.get("summary", {})
-    forecast_periods = forecast.get("periods")
-    forecast_unit = forecast.get("unit", "periods")
-
-    product_focus_lines = []
-    if selected_product:
-        product_focus_lines.append(
-            f"- {selected_product['product']} is ranked #{selected_product['rank']} and contributes "
-            f"{_format_metric(selected_product['share_of_catalog_sales_pct'], '%')} of catalog sales."
-        )
-    elif top_products:
-        lead_product = top_products[0]
-        product_focus_lines.append(
-            f"- {lead_product['product']} is the strongest product in the current upload with total sales of "
-            f"{_format_metric(lead_product['total_sales'])}."
-        )
-        if len(top_products) > 1:
-            second_product = top_products[1]
-            product_focus_lines.append(
-                f"- {second_product['product']} is the next strongest product and should be monitored as a secondary growth bet."
-            )
-    else:
-        product_focus_lines.append("- Product-level ranking is not available for this dataset.")
-
-    actions = []
-    if festival_impact.get("uplift_percentage", 0) > 5:
-        actions.append(
-            "- Increase inventory and marketing spend ahead of strong festival periods because holiday sales are outperforming normal days."
-        )
-    else:
-        actions.append(
-            "- Use targeted promotions during weaker periods because festival uplift is limited in the current data."
-        )
-
-    if summary.get("trend_direction") == "downward":
-        actions.append(
-            "- Investigate pricing, assortment, and stock availability immediately because the recent run rate is below the previous baseline."
-        )
-    else:
-        actions.append(
-            "- Double down on channels and products driving the current momentum while the trend remains stable or improving."
-        )
-
-    if selected_product:
-        actions.append(
-            f"- Create a focused campaign for {selected_product['product']} and track whether its share of sales rises above "
-            f"{_format_metric(selected_product['share_of_catalog_sales_pct'], '%')}."
-        )
-    elif top_products:
-        actions.append(
-            f"- Build bundles, upsell flows, or visibility boosts around {top_products[0]['product']} to lift overall basket value."
-        )
-    else:
-        actions.append(
-            "- Add product identifiers to future uploads so the system can recommend product-level actions instead of only aggregate actions."
-        )
-
-    fallback_note = (
-        f"Gemini API is currently unavailable for this request ({failure_reason}). "
-        f"A local rule-based summary is shown instead."
-    )
-    if language != "English":
-        fallback_note += f" Requested language was {language}, but the fallback summary is returned in English."
-
-    lines = [
-        f"_Note: {fallback_note}_",
-        "",
-        "## Current Sales Health",
-        f"- Scope: {product_name or dataset.get('selected_scope', 'All products')}",
-        f"- Granularity: {dataset.get('granularity', 'unknown')}",
-        f"- Current run rate: {_format_metric(summary.get('current_run_rate'))}",
-        f"- Latest sales: {_format_metric(summary.get('latest_sales'))}",
-        f"- Trend direction: {summary.get('trend_direction', 'unknown')} at {_format_metric(summary.get('growth_pct'), '%')}",
-        f"- Festival uplift: {_format_metric(festival_impact.get('uplift_percentage'), '%')}",
-        "",
-        "## Future Outlook",
-        f"- Forecast horizon: {_format_metric(forecast_periods)} {forecast_unit}",
-        f"- Forecast direction: {forecast_summary.get('projected_direction', 'unknown')}",
-        f"- Expected cumulative sales: {_format_metric(forecast_summary.get('cumulative_predicted_sales'))}",
-        f"- Average predicted sales: {_format_metric(forecast_summary.get('average_predicted_sales'))}",
-        f"- Peak forecast point: {forecast_summary.get('peak_forecast_date', 'n/a')} at {_format_metric(forecast_summary.get('peak_forecast_sales'))}",
-        "",
-        "## Product Focus",
-        *product_focus_lines,
-        "",
-        "## Actions to Improve Sales",
-        *actions[:3],
-    ]
-
-    return "\n".join(lines)
 
 
 @app.route("/")
@@ -344,7 +233,7 @@ def home():
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
-    if model is None:
+    if not ensure_model_loaded():
         return (
             jsonify(
                 {
@@ -369,7 +258,7 @@ def health_check():
 @app.route("/api/predict", methods=["POST"])
 def predict_sales():
     try:
-        data = request.get_json()
+        data = _get_json_payload()
 
         required_fields = [
             "Item_Identifier",
@@ -397,6 +286,9 @@ def predict_sales():
                 400,
             )
 
+        if not ensure_model_loaded():
+            return jsonify({"success": False, "error": "Model not loaded"}), 500
+        
         prediction = model.predict(preprocess_input(data))[0]
         return jsonify(
             {
@@ -421,10 +313,12 @@ def predict_sales():
 @app.route("/api/batch-predict", methods=["POST"])
 def batch_predict():
     try:
-        payload = request.get_json()
+        payload = _get_json_payload()
         items = payload.get("items", [])
         if not items:
             return jsonify({"success": False, "error": "No items were provided."}), 400
+        if not ensure_model_loaded():
+            return jsonify({"success": False, "error": "Model not loaded"}), 500
 
         predictions = []
         for item in items:
@@ -462,6 +356,19 @@ def upload_csv():
         upload_id = upload_store.save(prepared["data"], prepared["metadata"])
         metadata = prepared["metadata"]
 
+        # IMPROVEMENT 2: Train per-user XGBoost model
+        try:
+            country_code = request.form.get("country_code", "IN")
+            festival_calendar = get_calendar(country_code)
+            training_metrics = ensemble_engine.train_user_model(
+                prepared["data"], 
+                upload_id, 
+                calendar=festival_calendar
+            )
+            metadata["training_metrics"] = training_metrics
+        except Exception as e:
+            print(f"[XGBoost Training Error] {e}")
+
         return jsonify(
             {
                 "success": True,
@@ -475,7 +382,7 @@ def upload_csv():
                 "product_primary_column": metadata["product_primary_column"],
                 "product_lookup_columns": metadata["product_lookup_columns"],
                 "sample_products": metadata["sample_products"],
-                "message": "File uploaded and normalized successfully.",
+                "message": "File uploaded, normalized, and model trained successfully.",
             }
         )
     except ValueError as error:
@@ -501,14 +408,61 @@ def product_search():
 @app.route("/api/forecast", methods=["POST"])
 def forecast():
     try:
-        payload = request.get_json()
+        payload = _get_json_payload()
         item = _resolve_item_from_payload(payload)
+        country_code = payload.get("country_code", "IN")
+        festival_calendar = get_calendar(country_code)
+        
+        # Original Prophet forecast
         result = generate_forecast(
             item,
             festival_calendar,
             selected_product=payload.get("selected_product"),
             forecast_periods=payload.get("forecast_periods"),
         )
+        
+        # IMPROVEMENT 1: Ensemble Logic (Prophet + XGBoost)
+        upload_id = payload.get("upload_id")
+        if upload_id:
+            try:
+                # Prepare prophet DF for ensemble
+                # result['forecast'] contains records, we need a DF
+                prophet_forecast_df = pd.DataFrame(result['forecast'])
+                prophet_forecast_df['ds'] = pd.to_datetime(prophet_forecast_df['date'])
+                prophet_forecast_df['yhat'] = prophet_forecast_df['predicted_sales']
+                prophet_forecast_df['yhat_lower'] = prophet_forecast_df['lower_bound']
+                prophet_forecast_df['yhat_upper'] = prophet_forecast_df['upper_bound']
+                
+                # Filter item data for the selected product if needed
+                filtered_df, _ = filter_dataset_by_product(item, payload.get("selected_product"))
+                
+                ensemble_forecast, confidence, w_prophet, w_xgb = ensemble_engine.predict_ensemble(
+                    prophet_forecast_df,
+                    upload_id,
+                    filtered_df,
+                    calendar=festival_calendar
+                )
+                
+                # Update result with ensemble predictions and metadata
+                result['forecast'] = ensemble_forecast
+                result['confidence'] = confidence
+                result['ensemble_weights'] = {"prophet": w_prophet, "xgb": w_xgb}
+                
+                # Calculate metrics (placeholders if not already calculated during training)
+                if 'training_metrics' in item['metadata']:
+                    result['metrics'] = {
+                        "rmse": item['metadata']['training_metrics'].get('rmse'),
+                        "mae": item['metadata']['training_metrics'].get('mae'),
+                        "row_count": item['metadata']['training_metrics'].get('row_count')
+                    }
+                else:
+                    result['metrics'] = {
+                        "row_count": len(filtered_df)
+                    }
+            except Exception as e:
+                print(f"[Ensemble Error] {e}")
+                result['ensemble_error'] = str(e)
+
         return jsonify({"success": True, **result})
     except LookupError as error:
         return jsonify({"success": False, "error": str(error)}), 404
@@ -530,8 +484,10 @@ def forecast():
 @app.route("/api/analyze-patterns", methods=["POST"])
 def analyze_patterns():
     try:
-        payload = request.get_json()
+        payload = _get_json_payload()
         item = _resolve_item_from_payload(payload)
+        country_code = payload.get("country_code", "IN")
+        festival_calendar = get_calendar(country_code)
         patterns = analyze_dataset(
             item,
             festival_calendar,
@@ -551,6 +507,8 @@ def festival_impact():
     try:
         upcoming_festivals = []
         today = pd.Timestamp.now().normalize()
+        country_code = request.args.get("country_code", "IN")
+        festival_calendar = get_calendar(country_code)
 
         for day_offset in range(60):
             current_date = today + pd.Timedelta(days=day_offset)
@@ -573,9 +531,43 @@ def festival_impact():
         return jsonify({"success": False, "error": str(error)}), 500
 
 
+@app.route("/api/holidays", methods=["GET"])
+def get_holidays():
+    """
+    Expose festival data via GET /holidays?market=India&start=2026-01-01&end=2026-12-31 endpoint
+    """
+    try:
+        market = request.args.get("market", "IN")
+        start_date = request.args.get("start")
+        end_date = request.args.get("end")
+
+        if not start_date or not end_date:
+            return jsonify({"success": False, "error": "Start and end dates are required."}), 400
+
+        calendar = get_calendar(market)
+        start = pd.to_datetime(start_date)
+        end = pd.to_datetime(end_date)
+        
+        holidays_list = []
+        current = start
+        while current <= end:
+            if calendar.is_holiday(current):
+                name = calendar.get_holiday_name(current)
+                holidays_list.append({
+                    "date": current.strftime('%Y-%m-%d'),
+                    "festival": name,
+                    "category": calendar.get_festival_category(name)
+                })
+            current += pd.Timedelta(days=1)
+
+        return jsonify({"success": True, "holidays": holidays_list})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route("/api/model-info", methods=["GET"])
 def model_info():
-    if model is None:
+    if not ensure_model_loaded():
         return jsonify({"success": False, "message": "Model not loaded."}), 500
 
     return jsonify(
@@ -592,72 +584,92 @@ def model_info():
 
 @app.route("/api/ai-insights", methods=["POST"])
 def ai_insights():
-    payload = {}
-    context = None
     try:
-        payload = request.get_json()
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "error": "Gemini API key is not configured. Add GOOGLE_API_KEY to backend/.env.",
-                    }
-                ),
-                400,
+        data = _get_json_payload()
+        upload_id = data.get("upload_id")
+        item = upload_store.get(upload_id) if upload_id else None
+        context = data.get("context") or {}
+        analysis_context = context.get("analysis") or {}
+        forecast_context = context.get("forecast") or {}
+        analysis_summary = analysis_context.get("summary") or {}
+        forecast_summary = forecast_context.get("summary") or {}
+        
+        sales_summary = {
+            "scope": data.get("product_name") or "All products",
+            "total_sales": data.get("total_sales")
+            or analysis_summary.get("total_sales")
+            or data.get("summary", "N/A"),
+            "trend": data.get("trend")
+            or analysis_summary.get("trend_direction")
+            or "stable",
+            "market": data.get("market") or data.get("country_code", "India"),
+            "festival": data.get("festival") or "None",
+            "growth_rate": data.get("growth_rate")
+            or analysis_summary.get("growth_pct")
+            or "N/A",
+            "granularity": data.get("granularity")
+            or analysis_summary.get("granularity")
+            or "Daily",
+            "current_run_rate": analysis_summary.get("current_run_rate", "N/A"),
+            "latest_sales": analysis_summary.get("latest_sales", "N/A"),
+            "forecast_direction": forecast_summary.get("projected_direction", "stable"),
+            "forecast_total": forecast_summary.get("cumulative_predicted_sales", "N/A"),
+        }
+        
+        selected_product_stats = analysis_context.get("selected_product_stats")
+        top_products = analysis_context.get("top_products") or []
+        top_festivals = analysis_context.get("top_festivals") or []
+
+        if sales_summary["festival"] == "None" and top_festivals:
+            sales_summary["festival"] = ", ".join(
+                [str(festival.get("festival")) for festival in top_festivals[:2] if festival.get("festival")]
+            ) or "None"
+
+        if selected_product_stats:
+            sales_summary["product_stats"] = [selected_product_stats]
+        elif top_products:
+            sales_summary["product_stats"] = top_products[:5]
+        elif item and "metadata" in item:
+            product_summary = item["metadata"].get("product_summary")
+            if product_summary is not None and not product_summary.empty:
+                total_sales = float(product_summary["total_sales"].sum()) or 0.0
+                sales_summary["product_stats"] = []
+                for _, row in product_summary.head(5).iterrows():
+                    share = (float(row["total_sales"]) / total_sales * 100) if total_sales else 0.0
+                    sales_summary["product_stats"].append(
+                        {
+                            "product": row["product_key"],
+                            "total_sales": round(float(row["total_sales"]), 2),
+                            "share_of_catalog_sales_pct": round(share, 2),
+                        }
+                    )
+
+        if item and "metadata" in item:
+            sales_summary["granularity"] = item["metadata"].get(
+                "granularity",
+                sales_summary["granularity"],
             )
-
-        language = payload.get("language", "English")
-        summary = payload.get("summary", "No summary provided.")
-        product_name = payload.get("product_name", "All Products")
-        context = payload.get("context")
-
-        if not context and payload.get("upload_id"):
-            item = _resolve_item_from_payload(payload)
-            analysis_context = analyze_dataset(
-                item,
-                festival_calendar,
-                selected_product=payload.get("selected_product"),
-            )
-            context = {"analysis": analysis_context}
-
-        genai.configure(api_key=api_key)
-        model_name = _resolve_gemini_model_name()
-        llm = genai.GenerativeModel(model_name)
-        response = llm.generate_content(_build_ai_prompt(language, product_name, context, summary))
-
-        return jsonify(
-            {
-                "success": True,
-                "language": language,
-                "model": model_name,
-                "insights": response.text,
-            }
-        )
-    except LookupError as error:
-        return jsonify({"success": False, "error": str(error)}), 404
+        
+        language = data.get("language", "English")
+        
+        # Call the new Groq-powered engine with rich context
+        insight = get_ai_insight(sales_summary, language)
+        
+        return jsonify({
+            "success": True, 
+            "insights": insight,
+            "model": "groq-llama-3.3-70b"
+        })
     except Exception as error:
-        fallback_insights = _build_fallback_ai_insights(
-            language=payload.get("language", "English"),
-            product_name=payload.get("product_name", "All Products"),
-            context=context,
-            failure_reason=str(error),
-        )
-        return jsonify(
-            {
-                "success": True,
-                "fallback": True,
-                "warning": f"Gemini unavailable: {error}",
-                "language": payload.get("language", "English"),
-                "model": "local-fallback",
-                "insights": fallback_insights,
-            }
-        )
+        return jsonify({
+            "success": False, 
+            "error": str(error),
+            "message": "AI insight generation failed."
+        }), 500
 
 
 if __name__ == "__main__":
-    if load_model():
+    if ensure_model_loaded():
         print("[INFO] Starting Flask server on http://127.0.0.1:5000")
         app.run(debug=True, host="0.0.0.0", port=5000)
     else:

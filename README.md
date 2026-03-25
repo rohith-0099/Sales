@@ -1,192 +1,110 @@
-# Indian Retail Sales Forecaster and AI Analyst
+# 🚀 Sales Prediction & Retail Intelligence System
 
-This project is a retail analytics system for store owners and analysts who want to upload historical sales data and turn it into actionable business insights. The application analyzes past sales, estimates near-term future sales, highlights trends and patterns, and lets users drill down into individual products by name or unique ID. It also includes multilingual AI explanations powered by Google Gemini to explain what is happening in the data, which products deserve more focus, and how sales can be improved.
+A professional-grade retail analytics platform that transforms raw sales data into actionable business strategies. The system combines time-series forecasting, product-level drill-downs, and multilingual AI insights to help retailers understand their past and predict their future.
 
-## Core Capabilities
+---
 
-- Upload historical retail sales data in CSV format.
-- Analyze current sales health from uploaded data.
-- Generate future sales forecasts for the next 30 days.
-- Show patterns such as monthly trends and festival impact.
-- Detect product identifiers in the uploaded file and filter analysis by product.
-- Use Gemini AI to generate multilingual business recommendations.
-- Run a separate manual single-item sales prediction flow with the trained model.
+## 🌟 Core Features
 
-## What the System Analyzes
+### 1. 📊 Smart Data Upload & Normalization
+*   **Flexible Formats:** Supports `.xlsx` and `.csv` files.
+*   **Automatic Detection:** Dynamically identifies date and sales columns, and infers data granularity (Daily, Weekly, Monthly, or Yearly).
+*   **Product Extraction:** Automatically detects product identifiers (Names or IDs) to enable granular filtering.
 
-After you upload a file with `date` and `sales` columns, the system can:
+### 2. 🔮 Advanced Sales Forecasting
+*   **Prophet-Powered:** Uses the Meta Prophet model for robust time-series forecasting.
+*   **Granular Predictions:** Matches the forecast length to your data (e.g., 30 days for daily data, 12 months for monthly data).
+*   **Uncertainty Intervals:** Provides lower and upper confidence bounds for every prediction.
 
-- summarize the uploaded data
-- forecast upcoming sales
-- show trend and pattern information
-- compare normal days with festival periods
-- identify top-performing festivals
-- let you search for a product and view its specific forecast
-- generate AI-based explanations and strategy suggestions
+### 3. 🌍 Multi-Market Intelligence (New!)
+*   **Market Selection:** Toggle between **India, USA, UK, UAE, Australia, and Canada**.
+*   **Dynamic Currency:** Automatically switches symbols (₹, $, £, AED) and formatting based on the selected market.
+*   **Holiday Awareness:** Injects country-specific holiday regressors (e.g., Diwali for India, Thanksgiving for USA) into the AI model for higher seasonal accuracy.
 
-Supported product lookup columns include:
+### 4. 🤖 Gemini AI Strategic Analyst
+*   **Explainable Trends:** Generates natural language explanations of sales health.
+*   **Actionable Advice:** Provides exactly 3 concrete steps to improve sales based on current data.
+*   **Multilingual:** Supports **English, Hindi, Marathi, Bengali, Telugu, and Tamil**.
 
-- `product_code`
-- `product_id`
-- `item_identifier`
-- `product`
-- `item`
-- `product_name`
+### 5. 🔬 Product Deep-Dive
+*   **Searchable Inventory:** Quickly find any product from your uploaded dataset.
+*   **Isolated Analysis:** View specific trends and local forecasts for a single item.
+*   **Leaderboard:** Automatically ranks top-performing products by total sales and volume.
 
-## Example Use Case
+---
 
-A retail store uploads daily, monthly, or yearly sales data. The system reads the historical records, shows the current performance pattern, predicts future sales, and allows the user to search for a specific product to inspect its sales behavior separately. Gemini AI then explains the trend in the selected language and suggests which products need more attention and what actions may help improve revenue.
-
-## Tech Stack
-
-- Frontend: React, Vite, Tailwind CSS, Recharts
-- Backend: Flask, Pandas, Prophet, scikit-learn
-- ML model: XGBoost-based sales prediction pipeline
-- AI assistant: Google Gemini
-- Domain logic: Indian festival calendar and holiday-aware analysis
-
-## Quick Start
-
-You need two terminals: one for the backend and one for the frontend.
-
-### 1. Start the backend
-
-```powershell
-cd c:\Users\rohit\Desktop\sales-prediction-system\backend
-venv\Scripts\python.exe app.py
-```
-
-The backend is ready when it shows:
-
-```text
-Running on http://127.0.0.1:5000
-```
-
-### 2. Start the frontend
-
-```powershell
-cd c:\Users\rohit\Desktop\sales-prediction-system\frontend
-npm run dev
-```
-
-The frontend is ready when it shows a local URL such as:
-
-```text
-http://localhost:5173/
-```
-
-### 3. Open the app
-
-Visit:
-
-```text
-http://localhost:5173
-```
-
-## Expected Input Format
-
-Minimum required columns:
-
-```csv
-date,sales
-2025-01-01,2500
-2025-01-02,2700
-```
-
-Optional product-level analysis:
-
-```csv
-date,sales,product_id,product_name
-2025-01-01,2500,P101,Milk
-2025-01-02,1800,P102,Bread
-```
-
-Notes:
-
-- `date` must be a valid date column.
-- `sales` must be numeric.
-- Product filtering is enabled only if one supported product column is present.
-- The current forecast flow produces a 30-day future forecast.
-
-## Workflow
-
-1. Upload a sales CSV file.
-2. Optionally choose a product before analysis.
-3. Run analysis to generate forecasts and pattern insights.
-4. Review the forecast chart and festival-based sales impact.
-5. Search for a specific product to inspect its individual behavior.
-6. Request Gemini AI insights in English, Hindi, Marathi, Bengali, Telugu, or Tamil.
-
-## AI Insights
-
-The AI insights feature uses Google Gemini to generate:
-
-- current sales health commentary
-- future outlook based on forecasted data
-- product focus suggestions
-- practical sales improvement strategies
-
-To enable it, create `backend/.env` with:
-
-```env
-GOOGLE_API_KEY=your_api_key_here
-```
-
-## API Endpoints
-
-| Endpoint | Method | Purpose |
-| --- | --- | --- |
-| `/api/predict` | POST | Manual single-item sales prediction |
-| `/api/upload-csv` | POST | Upload and inspect historical CSV data |
-| `/api/forecast` | POST | Generate forecast from historical sales |
-| `/api/analyze-patterns` | POST | Analyze monthly trends and festival effects |
-| `/api/festival-impact` | GET | View upcoming festivals and expected impact |
-| `/api/model-info` | GET | Show loaded model information |
-| `/api/health` | GET | Check backend health |
-| `/api/ai-insights` | POST | Generate multilingual Gemini analysis |
-
-## Project Structure
+## 📁 Project Architecture
 
 ```text
 sales-prediction-system/
-|-- backend/
-|   |-- app.py
-|   |-- requirements.txt
-|   |-- train_integrated_model.py
-|   |-- unified_data_processor.py
-|   |-- indian_holidays.py
-|   |-- data/
-|   `-- visualizations/
-|-- frontend/
-|   |-- src/
-|   |   |-- App.jsx
-|   |   `-- components/
-|   `-- package.json
-|-- models/
-|-- test_data/
-|-- visualizations/
-`-- README.md
+├── backend/                # Flask Server
+│   ├── app.py              # Main API Hub & Route Handlers
+│   ├── analytics_engine.py # Core Forecasting & Data Logic (Prophet)
+│   ├── market_holidays.py  # Global Holiday Database & Logic
+│   ├── model.py            # XGBoost Single-Item Model (Attributes)
+│   ├── requirements.txt    # Backend Dependencies
+│   └── data/               # Historical Datasets
+├── frontend/               # React (Vite) Application
+│   ├── src/
+│   │   ├── App.jsx         # Main Dashboard Interface
+│   │   └── components/     # UI Components (Charts, Uploaders)
+│   └── package.json        # Frontend Dependencies
+└── models/                 # Saved ML Models (.pkl)
 ```
 
-## Troubleshooting
+---
 
-### Model not found
+## 🛠️ Quick Start Guide
 
-If the backend cannot find the trained model, retrain it:
+### 1. Prerequisites
+*   Python 3.9+
+*   Node.js & npm
+*   Google Gemini API Key ([Get it here](https://aistudio.google.com/app/apikey))
 
-```powershell
-cd c:\Users\rohit\Desktop\sales-prediction-system\backend
-venv\Scripts\python.exe train_integrated_model.py
+### 2. Backend Setup
+```bash
+cd backend
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+
+pip install -r requirements.txt
+```
+**Configure Environment:** Create a `.env` file in the `backend/` folder:
+```env
+GOOGLE_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.0-flash
 ```
 
-### Frontend cannot connect
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-Make sure the backend is running on port `5000`.
+### 4. Run the App
+1.  Start the backend: `python app.py`
+2.  Start the frontend: `npm run dev`
+3.  Open `http://localhost:5173` in your browser.
 
-### Gemini insights fail
+---
 
-Make sure `GOOGLE_API_KEY` exists in `backend/.env`.
+## 📈 Usage Workflow
+1.  **Select Market:** Choose your country from the top-right dropdown.
+2.  **Upload:** Drag and drop your sales spreadsheet.
+3.  **Analyze:** Click "Generate forecast and insights".
+4.  **Explore:** Use the search bar to zoom into specific products.
+5.  **Strategize:** Click "Generate AI insight" to get your business plan.
 
-## Summary
+---
 
-This project is designed to help retail businesses move from raw sales files to clear decisions. It combines forecasting, product-level exploration, festival-aware trend analysis, and multilingual AI explanations in one workflow.
+## ⚖️ Accuracy & Performance
+The system uses a hybrid approach:
+*   **Seasonality:** Captured via the Prophet model's Fourier series components.
+*   **Holidays:** Modeled as point-in-time regressors with a +/- 7-day window.
+*   **Granularity:** Optimized comparison windows for stable growth metrics.
+
+*This project is designed for both Indian and International retail markets.*
