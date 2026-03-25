@@ -1,0 +1,217 @@
+MonthYear,Product,Monthly_Units,Total_Revenue,Inventory_Level
+2023-03,Saffola Gold Oil (1L),1779,346905,Good
+2023-04,Saffola Gold Oil (1L),1327,258765,Good
+2023-05,Saffola Gold Oil (1L),1605,312975,Good
+2023-06,Saffola Gold Oil (1L),1564,304980,Good
+2023-07,Saffola Gold Oil (1L),1643,320385,Good
+2023-08,Saffola Gold Oil (1L),1475,287625,Good
+2023-09,Saffola Gold Oil (1L),1669,325455,Good
+2023-10,Saffola Gold Oil (1L),2268,442260,Good
+2023-11,Saffola Gold Oil (1L),2099,409305,Good
+2023-12,Saffola Gold Oil (1L),1753,341835,Good
+2024-01,Saffola Gold Oil (1L),1568,305760,Good
+2024-02,Saffola Gold Oil (1L),1550,302250,Good
+2024-03,Saffola Gold Oil (1L),1974,384930,Good
+2024-04,Saffola Gold Oil (1L),1692,329940,Good
+2024-05,Saffola Gold Oil (1L),1819,354705,Good
+2024-06,Saffola Gold Oil (1L),1971,384345,Good
+2024-07,Saffola Gold Oil (1L),1786,348270,Good
+2024-08,Saffola Gold Oil (1L),1945,379275,Good
+2024-09,Saffola Gold Oil (1L),1768,344760,Good
+2024-10,Saffola Gold Oil (1L),2874,560430,Good
+2024-11,Saffola Gold Oil (1L),2843,554385,Good
+2024-12,Saffola Gold Oil (1L),1929,376155,Good
+2025-01,Saffola Gold Oil (1L),1831,357045,Good
+2025-02,Saffola Gold Oil (1L),2010,391950,Good
+2025-03,Saffola Gold Oil (1L),2350,458250,Good
+2025-04,Saffola Gold Oil (1L),2133,415935,Good
+2025-05,Saffola Gold Oil (1L),2247,438165,Good
+2025-07,Saffola Gold Oil (1L),2143,417885,Good
+2025-08,Saffola Gold Oil (1L),2144,418080,Good
+2025-09,Saffola Gold Oil (1L),1981,386295,Good
+2025-10,Saffola Gold Oil (1L),3164,616980,Good
+2025-11,Saffola Gold Oil (1L),3101,604695,Good
+2025-12,Saffola Gold Oil (1L),2287,445965,Good
+2026-01,Saffola Gold Oil (1L),2286,445770,Good
+2026-02,Saffola Gold Oil (1L),1984,386880,Good
+2026-03,Saffola Gold Oil (1L),2763,538785,Good
+2023-03,Brooke Bond Red Label (500g),990,306900,Good
+2023-04,Brooke Bond Red Label (500g),845,261950,Good
+2023-05,Brooke Bond Red Label (500g),848,262880,Good
+2023-06,Brooke Bond Red Label (500g),748,231880,Good
+2023-07,Brooke Bond Red Label (500g),772,239320,Good
+2023-08,Brooke Bond Red Label (500g),818,253580,Good
+2023-09,Brooke Bond Red Label (500g),772,239320,Good
+2023-10,Brooke Bond Red Label (500g),1203,372930,Good
+2023-11,Brooke Bond Red Label (500g),1240,384400,Good
+2023-12,Brooke Bond Red Label (500g),904,280240,Good
+2024-01,Brooke Bond Red Label (500g),753,233430,Good
+2024-02,Brooke Bond Red Label (500g),899,278690,Good
+2024-03,Brooke Bond Red Label (500g),1131,350610,Good
+2024-04,Brooke Bond Red Label (500g),799,247690,Good
+2024-05,Brooke Bond Red Label (500g),980,303800,Good
+2024-06,Brooke Bond Red Label (500g),958,296980,Good
+2024-07,Brooke Bond Red Label (500g),892,276520,Good
+2024-08,Brooke Bond Red Label (500g),995,308450,Good
+2024-09,Brooke Bond Red Label (500g),942,292020,Good
+2024-10,Brooke Bond Red Label (500g),1310,406100,Good
+2024-11,Brooke Bond Red Label (500g),1300,403000,Good
+2024-12,Brooke Bond Red Label (500g),940,291400,Good
+2025-01,Brooke Bond Red Label (500g),1021,316510,Good
+2025-02,Brooke Bond Red Label (500g),981,304110,Good
+2025-03,Brooke Bond Red Label (500g),1183,366730,Good
+2025-04,Brooke Bond Red Label (500g),934,289540,Good
+2025-05,Brooke Bond Red Label (500g),872,270320,Good
+2025-07,Brooke Bond Red Label (500g),962,298220,Good
+2025-08,Brooke Bond Red Label (500g),1002,310620,Good
+2025-09,Brooke Bond Red Label (500g),1014,314340,Good
+2025-10,Brooke Bond Red Label (500g),1618,501580,Good
+2025-11,Brooke Bond Red Label (500g),1447,448570,Good
+2025-12,Brooke Bond Red Label (500g),1001,310310,Good
+2026-01,Brooke Bond Red Label (500g),1087,336970,Good
+2026-02,Brooke Bond Red Label (500g),965,299150,Good
+2026-03,Brooke Bond Red Label (500g),1264,391840,Good
+2023-03,Kissan Mixed Fruit Jam (500g),505,80800,Good
+2023-04,Kissan Mixed Fruit Jam (500g),379,60640,Good
+2023-05,Kissan Mixed Fruit Jam (500g),416,66560,Good
+2023-06,Kissan Mixed Fruit Jam (500g),438,70080,Good
+2023-07,Kissan Mixed Fruit Jam (500g),373,59680,Good
+2023-08,Kissan Mixed Fruit Jam (500g),410,65600,Good
+2023-09,Kissan Mixed Fruit Jam (500g),418,66880,Good
+2023-10,Kissan Mixed Fruit Jam (500g),585,93600,Good
+2023-11,Kissan Mixed Fruit Jam (500g),658,105280,Good
+2023-12,Kissan Mixed Fruit Jam (500g),491,78560,Good
+2024-01,Kissan Mixed Fruit Jam (500g),429,68640,Good
+2024-02,Kissan Mixed Fruit Jam (500g),477,76320,Good
+2024-03,Kissan Mixed Fruit Jam (500g),544,87040,Good
+2024-04,Kissan Mixed Fruit Jam (500g),465,74400,Good
+2024-05,Kissan Mixed Fruit Jam (500g),452,72320,Good
+2024-06,Kissan Mixed Fruit Jam (500g),462,73920,Good
+2024-07,Kissan Mixed Fruit Jam (500g),484,77440,Good
+2024-08,Kissan Mixed Fruit Jam (500g),514,82240,Good
+2024-09,Kissan Mixed Fruit Jam (500g),534,85440,Good
+2024-10,Kissan Mixed Fruit Jam (500g),798,127680,Good
+2024-11,Kissan Mixed Fruit Jam (500g),814,130240,Good
+2024-12,Kissan Mixed Fruit Jam (500g),505,80800,Good
+2025-01,Kissan Mixed Fruit Jam (500g),569,91040,Good
+2025-02,Kissan Mixed Fruit Jam (500g),587,93920,Good
+2025-03,Kissan Mixed Fruit Jam (500g),672,107520,Good
+2025-04,Kissan Mixed Fruit Jam (500g),607,97120,Good
+2025-05,Kissan Mixed Fruit Jam (500g),595,95200,Good
+2025-07,Kissan Mixed Fruit Jam (500g),531,84960,Good
+2025-08,Kissan Mixed Fruit Jam (500g),582,93120,Good
+2025-09,Kissan Mixed Fruit Jam (500g),606,96960,Good
+2025-10,Kissan Mixed Fruit Jam (500g),930,148800,Good
+2025-11,Kissan Mixed Fruit Jam (500g),902,144320,Good
+2025-12,Kissan Mixed Fruit Jam (500g),623,99680,Good
+2026-01,Kissan Mixed Fruit Jam (500g),620,99200,Good
+2026-02,Kissan Mixed Fruit Jam (500g),668,106880,Good
+2026-03,Kissan Mixed Fruit Jam (500g),824,131840,Good
+2023-03,Maggi Masala-e-Magic (Pack 12),2956,177360,Good
+2023-04,Maggi Masala-e-Magic (Pack 12),2363,141780,Good
+2023-05,Maggi Masala-e-Magic (Pack 12),2780,166800,Good
+2023-06,Maggi Masala-e-Magic (Pack 12),2033,121980,Good
+2023-07,Maggi Masala-e-Magic (Pack 12),2748,164880,Good
+2023-08,Maggi Masala-e-Magic (Pack 12),2983,178980,Good
+2023-09,Maggi Masala-e-Magic (Pack 12),2613,156780,Good
+2023-10,Maggi Masala-e-Magic (Pack 12),3782,226920,Good
+2023-11,Maggi Masala-e-Magic (Pack 12),3886,233160,Good
+2023-12,Maggi Masala-e-Magic (Pack 12),2952,177120,Good
+2024-01,Maggi Masala-e-Magic (Pack 12),2612,156720,Good
+2024-02,Maggi Masala-e-Magic (Pack 12),3210,192600,Good
+2024-03,Maggi Masala-e-Magic (Pack 12),3378,202680,Good
+2024-04,Maggi Masala-e-Magic (Pack 12),3076,184560,Good
+2024-05,Maggi Masala-e-Magic (Pack 12),2939,176340,Good
+2024-06,Maggi Masala-e-Magic (Pack 12),2942,176520,Good
+2024-07,Maggi Masala-e-Magic (Pack 12),2814,168840,Good
+2024-08,Maggi Masala-e-Magic (Pack 12),2879,172740,Good
+2024-09,Maggi Masala-e-Magic (Pack 12),2529,151740,Good
+2024-10,Maggi Masala-e-Magic (Pack 12),4098,245880,Good
+2024-11,Maggi Masala-e-Magic (Pack 12),4585,275100,Good
+2024-12,Maggi Masala-e-Magic (Pack 12),3156,189360,Good
+2025-01,Maggi Masala-e-Magic (Pack 12),2922,175320,Good
+2025-02,Maggi Masala-e-Magic (Pack 12),3257,195420,Good
+2025-03,Maggi Masala-e-Magic (Pack 12),3923,235380,Good
+2025-04,Maggi Masala-e-Magic (Pack 12),3558,213480,Good
+2025-05,Maggi Masala-e-Magic (Pack 12),3539,212340,Good
+2025-07,Maggi Masala-e-Magic (Pack 12),3451,207060,Good
+2025-08,Maggi Masala-e-Magic (Pack 12),3512,210720,Good
+2025-09,Maggi Masala-e-Magic (Pack 12),3544,212640,Good
+2025-10,Maggi Masala-e-Magic (Pack 12),4797,287820,Good
+2025-11,Maggi Masala-e-Magic (Pack 12),4701,282060,Good
+2025-12,Maggi Masala-e-Magic (Pack 12),3935,236100,Good
+2026-01,Maggi Masala-e-Magic (Pack 12),3615,216900,Good
+2026-02,Maggi Masala-e-Magic (Pack 12),3652,219120,Good
+2026-03,Maggi Masala-e-Magic (Pack 12),4286,257160,Good
+2023-03,Lizol Disinfectant (500ml),432,49680,Good
+2023-04,Lizol Disinfectant (500ml),338,38870,Good
+2023-05,Lizol Disinfectant (500ml),337,38755,Good
+2023-06,Lizol Disinfectant (500ml),360,41400,Good
+2023-07,Lizol Disinfectant (500ml),352,40480,Good
+2023-08,Lizol Disinfectant (500ml),404,46460,Good
+2023-09,Lizol Disinfectant (500ml),349,40135,Good
+2023-10,Lizol Disinfectant (500ml),562,64630,Good
+2023-11,Lizol Disinfectant (500ml),535,61525,Good
+2023-12,Lizol Disinfectant (500ml),434,49910,Good
+2024-01,Lizol Disinfectant (500ml),339,38985,Good
+2024-02,Lizol Disinfectant (500ml),392,45080,Good
+2024-03,Lizol Disinfectant (500ml),434,49910,Good
+2024-04,Lizol Disinfectant (500ml),363,41745,Good
+2024-05,Lizol Disinfectant (500ml),403,46345,Good
+2024-06,Lizol Disinfectant (500ml),359,41285,Good
+2024-07,Lizol Disinfectant (500ml),403,46345,Good
+2024-08,Lizol Disinfectant (500ml),365,41975,Good
+2024-09,Lizol Disinfectant (500ml),385,44275,Good
+2024-10,Lizol Disinfectant (500ml),577,66355,Good
+2024-11,Lizol Disinfectant (500ml),545,62675,Good
+2024-12,Lizol Disinfectant (500ml),364,41860,Good
+2025-01,Lizol Disinfectant (500ml),427,49105,Good
+2025-02,Lizol Disinfectant (500ml),398,45770,Good
+2025-03,Lizol Disinfectant (500ml),490,56350,Good
+2025-04,Lizol Disinfectant (500ml),430,49450,Good
+2025-05,Lizol Disinfectant (500ml),423,48645,Good
+2025-07,Lizol Disinfectant (500ml),478,54970,Good
+2025-08,Lizol Disinfectant (500ml),417,47955,Good
+2025-09,Lizol Disinfectant (500ml),440,50600,Good
+2025-10,Lizol Disinfectant (500ml),590,67850,Good
+2025-11,Lizol Disinfectant (500ml),608,69920,Good
+2025-12,Lizol Disinfectant (500ml),434,49910,Good
+2026-01,Lizol Disinfectant (500ml),502,57730,Good
+2026-02,Lizol Disinfectant (500ml),396,45540,Good
+2026-03,Lizol Disinfectant (500ml),543,62445,Good
+2023-03,Comfort Fabric Conditioner,383,84260,Good
+2023-04,Comfort Fabric Conditioner,259,56980,Good
+2023-05,Comfort Fabric Conditioner,287,63140,Good
+2023-06,Comfort Fabric Conditioner,285,62700,Good
+2023-07,Comfort Fabric Conditioner,270,59400,Good
+2023-08,Comfort Fabric Conditioner,313,68860,Good
+2023-09,Comfort Fabric Conditioner,333,73260,Good
+2023-10,Comfort Fabric Conditioner,429,94380,Good
+2023-11,Comfort Fabric Conditioner,436,95920,Good
+2023-12,Comfort Fabric Conditioner,298,65560,Good
+2024-01,Comfort Fabric Conditioner,296,65120,Good
+2024-02,Comfort Fabric Conditioner,314,69080,Good
+2024-03,Comfort Fabric Conditioner,377,82940,Good
+2024-04,Comfort Fabric Conditioner,268,58960,Good
+2024-05,Comfort Fabric Conditioner,359,78980,Good
+2024-06,Comfort Fabric Conditioner,303,66660,Good
+2024-07,Comfort Fabric Conditioner,338,74360,Good
+2024-08,Comfort Fabric Conditioner,319,70180,Good
+2024-09,Comfort Fabric Conditioner,338,74360,Good
+2024-10,Comfort Fabric Conditioner,480,105600,Good
+2024-11,Comfort Fabric Conditioner,454,99880,Good
+2024-12,Comfort Fabric Conditioner,324,71280,Good
+2025-01,Comfort Fabric Conditioner,367,80740,Good
+2025-02,Comfort Fabric Conditioner,384,84480,Good
+2025-03,Comfort Fabric Conditioner,459,100980,Good
+2025-04,Comfort Fabric Conditioner,382,84040,Good
+2025-05,Comfort Fabric Conditioner,364,80080,Good
+2025-07,Comfort Fabric Conditioner,348,76560,Good
+2025-08,Comfort Fabric Conditioner,389,85580,Good
+2025-09,Comfort Fabric Conditioner,396,87120,Good
+2025-10,Comfort Fabric Conditioner,581,127820,Good
+2025-11,Comfort Fabric Conditioner,527,115940,Good
+2025-12,Comfort Fabric Conditioner,355,78100,Good
+2026-01,Comfort Fabric Conditioner,368,80960,Good
+2026-02,Comfort Fabric Conditioner,365,80300,Good
+2026-03,Comfort Fabric Conditioner,473,104060,Good

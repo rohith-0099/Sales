@@ -15,8 +15,8 @@ build/
 *.model
 
 # Data
-*.csv
-*.xlsx
+# *.csv
+# *.xlsx
 
 
 # Visualizations

@@ -1,0 +1,129 @@
+year,product_name,total_annual_sales,category,market
+2010,Amul Butter,152496,FMCG,India
+2011,Amul Butter,143729,FMCG,India
+2012,Amul Butter,162546,FMCG,India
+2013,Amul Butter,172477,FMCG,India
+2014,Amul Butter,184040,FMCG,India
+2015,Amul Butter,195087,FMCG,India
+2016,Amul Butter,205214,FMCG,India
+2017,Amul Butter,202122,FMCG,India
+2018,Amul Butter,241306,FMCG,India
+2019,Amul Butter,246908,FMCG,India
+2020,Amul Butter,279375,FMCG,India
+2021,Amul Butter,285580,FMCG,India
+2022,Amul Butter,291228,FMCG,India
+2023,Amul Butter,312113,FMCG,India
+2024,Amul Butter,336764,FMCG,India
+2025,Amul Butter,379718,FMCG,India
+2010,Tata Salt,54478,FMCG,India
+2011,Tata Salt,60588,FMCG,India
+2012,Tata Salt,67698,FMCG,India
+2013,Tata Salt,66830,FMCG,India
+2014,Tata Salt,78069,FMCG,India
+2015,Tata Salt,91760,FMCG,India
+2016,Tata Salt,101888,FMCG,India
+2017,Tata Salt,110354,FMCG,India
+2018,Tata Salt,117300,FMCG,India
+2019,Tata Salt,123302,FMCG,India
+2020,Tata Salt,151990,FMCG,India
+2021,Tata Salt,154360,FMCG,India
+2022,Tata Salt,171298,FMCG,India
+2023,Tata Salt,182146,FMCG,India
+2024,Tata Salt,212420,FMCG,India
+2025,Tata Salt,215163,FMCG,India
+2010,Aashirvaad Atta,99268,FMCG,India
+2011,Aashirvaad Atta,117891,FMCG,India
+2012,Aashirvaad Atta,131383,FMCG,India
+2013,Aashirvaad Atta,151322,FMCG,India
+2014,Aashirvaad Atta,175555,FMCG,India
+2015,Aashirvaad Atta,186414,FMCG,India
+2016,Aashirvaad Atta,219293,FMCG,India
+2017,Aashirvaad Atta,250974,FMCG,India
+2018,Aashirvaad Atta,276255,FMCG,India
+2019,Aashirvaad Atta,334751,FMCG,India
+2020,Aashirvaad Atta,343075,FMCG,India
+2021,Aashirvaad Atta,439271,FMCG,India
+2022,Aashirvaad Atta,475220,FMCG,India
+2023,Aashirvaad Atta,601792,FMCG,India
+2024,Aashirvaad Atta,670042,FMCG,India
+2025,Aashirvaad Atta,771110,FMCG,India
+2010,Maggi Noodles,147295,FMCG,India
+2011,Maggi Noodles,138356,FMCG,India
+2012,Maggi Noodles,159421,FMCG,India
+2013,Maggi Noodles,158310,FMCG,India
+2014,Maggi Noodles,196281,FMCG,India
+2015,Maggi Noodles,184954,FMCG,India
+2016,Maggi Noodles,194312,FMCG,India
+2017,Maggi Noodles,239478,FMCG,India
+2018,Maggi Noodles,264260,FMCG,India
+2019,Maggi Noodles,237126,FMCG,India
+2020,Maggi Noodles,284836,FMCG,India
+2021,Maggi Noodles,308936,FMCG,India
+2022,Maggi Noodles,313097,FMCG,India
+2023,Maggi Noodles,338162,FMCG,India
+2024,Maggi Noodles,359424,FMCG,India
+2025,Maggi Noodles,444586,FMCG,India
+2010,Parle-G,98728,FMCG,India
+2011,Parle-G,102651,FMCG,India
+2012,Parle-G,118614,FMCG,India
+2013,Parle-G,133647,FMCG,India
+2014,Parle-G,137418,FMCG,India
+2015,Parle-G,154505,FMCG,India
+2016,Parle-G,170658,FMCG,India
+2017,Parle-G,185356,FMCG,India
+2018,Parle-G,209829,FMCG,India
+2019,Parle-G,216640,FMCG,India
+2020,Parle-G,239735,FMCG,India
+2021,Parle-G,290746,FMCG,India
+2022,Parle-G,289137,FMCG,India
+2023,Parle-G,327091,FMCG,India
+2024,Parle-G,368625,FMCG,India
+2025,Parle-G,370112,FMCG,India
+2010,Surf Excel,74054,FMCG,India
+2011,Surf Excel,81664,FMCG,India
+2012,Surf Excel,98978,FMCG,India
+2013,Surf Excel,92657,FMCG,India
+2014,Surf Excel,121788,FMCG,India
+2015,Surf Excel,136065,FMCG,India
+2016,Surf Excel,160164,FMCG,India
+2017,Surf Excel,192745,FMCG,India
+2018,Surf Excel,208218,FMCG,India
+2019,Surf Excel,226406,FMCG,India
+2020,Surf Excel,273490,FMCG,India
+2021,Surf Excel,295954,FMCG,India
+2022,Surf Excel,309248,FMCG,India
+2023,Surf Excel,418704,FMCG,India
+2024,Surf Excel,435658,FMCG,India
+2025,Surf Excel,503120,FMCG,India
+2010,Clinic Plus,89034,FMCG,India
+2011,Clinic Plus,93747,FMCG,India
+2012,Clinic Plus,107162,FMCG,India
+2013,Clinic Plus,112059,FMCG,India
+2014,Clinic Plus,119877,FMCG,India
+2015,Clinic Plus,122445,FMCG,India
+2016,Clinic Plus,135995,FMCG,India
+2017,Clinic Plus,142124,FMCG,India
+2018,Clinic Plus,158511,FMCG,India
+2019,Clinic Plus,163529,FMCG,India
+2020,Clinic Plus,188903,FMCG,India
+2021,Clinic Plus,208968,FMCG,India
+2022,Clinic Plus,209166,FMCG,India
+2023,Clinic Plus,223388,FMCG,India
+2024,Clinic Plus,240592,FMCG,India
+2025,Clinic Plus,247345,FMCG,India
+2010,Colgate,75264,FMCG,India
+2011,Colgate,82967,FMCG,India
+2012,Colgate,101685,FMCG,India
+2013,Colgate,110023,FMCG,India
+2014,Colgate,127950,FMCG,India
+2015,Colgate,142231,FMCG,India
+2016,Colgate,156867,FMCG,India
+2017,Colgate,172636,FMCG,India
+2018,Colgate,193036,FMCG,India
+2019,Colgate,203727,FMCG,India
+2020,Colgate,256574,FMCG,India
+2021,Colgate,281883,FMCG,India
+2022,Colgate,314756,FMCG,India
+2023,Colgate,395708,FMCG,India
+2024,Colgate,434176,FMCG,India
+2025,Colgate,475189,FMCG,India
