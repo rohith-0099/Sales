@@ -4,7 +4,6 @@ import {
   AreaChart,
   CartesianGrid,
   Label,
-  Legend,
   ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
@@ -56,44 +55,6 @@ const CustomTooltip = ({ active, payload, marketCode }) => {
   );
 };
 
-function formatFestivalLabel(label, expanded) {
-  if (!label) {
-    return '';
-  }
-
-  const maxLength = expanded ? 22 : 14;
-  return label.length > maxLength ? `${label.slice(0, maxLength - 1)}...` : label;
-}
-
-function getLabeledFestivalDates(festivals, expanded) {
-  const sortedFestivals = [...festivals]
-    .filter((festival) => festival?.date)
-    .sort((left, right) => new Date(left.date) - new Date(right.date));
-
-  if (sortedFestivals.length <= (expanded ? 14 : 8)) {
-    return new Set(sortedFestivals.map((festival) => festival.date));
-  }
-
-  const minimumGapDays = expanded ? 12 : 21;
-  const minimumGapMs = minimumGapDays * 24 * 60 * 60 * 1000;
-  const labeledDates = new Set();
-  let lastLabeledTs = Number.NEGATIVE_INFINITY;
-
-  for (const festival of sortedFestivals) {
-    const currentTs = new Date(festival.date).getTime();
-    if (!Number.isFinite(currentTs)) {
-      continue;
-    }
-
-    if (currentTs - lastLabeledTs >= minimumGapMs) {
-      labeledDates.add(festival.date);
-      lastLabeledTs = currentTs;
-    }
-  }
-
-  return labeledDates;
-}
-
 function ForecastChart({
   historicalData = [],
   forecastData = [],
@@ -110,8 +71,6 @@ function ForecastChart({
   ];
   const forecastBoundary = historicalData.length ? historicalData[historicalData.length - 1].date : null;
   const isHighConfidence = String(confidence || '').toLowerCase().startsWith('high');
-  const compactFestivalLabels = getLabeledFestivalDates(festivals, false);
-  const expandedFestivalLabels = getLabeledFestivalDates(festivals, true);
 
   useEffect(() => {
     if (!isExpanded) {
@@ -136,8 +95,8 @@ function ForecastChart({
 
   function renderChartCard(expanded = false) {
     const chartHeight = expanded ? 620 : 420;
-    const labeledFestivals = expanded ? expandedFestivalLabels : compactFestivalLabels;
-    const showFestivalNote = festivals.length > labeledFestivals.size;
+    const visibleFestivalItems = expanded ? festivals : festivals.slice(0, 12);
+    const hiddenFestivalCount = Math.max(festivals.length - visibleFestivalItems.length, 0);
 
     return (
       <div className={expanded ? 'flex h-full flex-col' : 'rounded-3xl border border-slate-200 bg-white p-6 shadow-sm'}>
@@ -145,6 +104,20 @@ function ForecastChart({
           <div className="min-w-0">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Forecast View</p>
             <h3 className="text-2xl font-semibold text-slate-900">Historical trend and future projection</h3>
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-600">
+              <span className="inline-flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-teal-700" />
+                Historical sales
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-orange-600" />
+                Forecast sales
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-0.5 w-5 border-t-2 border-dashed border-amber-500" />
+                Festival markers
+              </span>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-3 md:justify-end">
             <p className="text-sm text-slate-500">Detected granularity: {granularity}</p>
@@ -192,13 +165,6 @@ function ForecastChart({
                 fontSize={12}
               />
               <Tooltip content={<CustomTooltip marketCode={marketCode} />} />
-              <Legend
-                verticalAlign="top"
-                align="right"
-                iconType="circle"
-                height={expanded ? 42 : 36}
-                wrapperStyle={{ fontSize: expanded ? '14px' : '12px' }}
-              />
 
               {forecastBoundary ? (
                 <ReferenceLine
@@ -216,17 +182,6 @@ function ForecastChart({
                   stroke="#f59e0b"
                   strokeDasharray="3 3"
                   strokeWidth={1}
-                  label={
-                    labeledFestivals.has(festival.date)
-                      ? {
-                          value: formatFestivalLabel(festival.festival, expanded),
-                          position: 'top',
-                          fill: '#d97706',
-                          fontSize: expanded ? 10 : 9,
-                          fontWeight: 600,
-                        }
-                      : undefined
-                  }
                 />
               ))}
 
@@ -303,10 +258,39 @@ function ForecastChart({
           </ResponsiveContainer>
         </div>
 
-        {showFestivalNote ? (
-          <p className="mt-4 text-xs text-slate-500">
-            Festival labels are sampled in the compact view to avoid overlap. Expand the chart for a wider forecast view.
-          </p>
+        {festivals.length ? (
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Festival Markers</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Amber dashed lines on the chart match the festival dates listed here, so labels stay readable.
+                </p>
+              </div>
+              <p className="text-sm font-medium text-slate-500">
+                {festivals.length} festival{festivals.length === 1 ? '' : 's'} in view
+              </p>
+            </div>
+
+            <div className={`mt-4 grid gap-2 ${expanded ? 'max-h-40 overflow-y-auto pr-1 md:grid-cols-3' : 'md:grid-cols-2 xl:grid-cols-3'}`}>
+              {visibleFestivalItems.map((festival, index) => (
+                <div
+                  key={`${festival.date}-${festival.festival}-${index}`}
+                  className="rounded-2xl border border-amber-200 bg-white px-3 py-2"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-700">{festival.date}</p>
+                  <p className="mt-1 break-words text-sm font-medium text-slate-800">{festival.festival}</p>
+                  {festival.category ? <p className="mt-1 text-xs text-slate-500">{festival.category}</p> : null}
+                </div>
+              ))}
+            </div>
+
+            {hiddenFestivalCount > 0 ? (
+              <p className="mt-3 text-xs text-slate-500">
+                Showing the first {visibleFestivalItems.length} festivals here. Use expanded view to see the full list.
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
     );
