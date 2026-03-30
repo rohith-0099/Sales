@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 from threading import Lock
 from typing import Any
@@ -660,9 +660,20 @@ def build_festival_impact(enriched_df: pd.DataFrame, granularity: str) -> dict[s
 
 
 def build_top_festivals(enriched_df: pd.DataFrame) -> list[dict[str, Any]]:
+    holiday_rows = enriched_df[enriched_df["is_holiday"]].copy()
+    if holiday_rows.empty:
+        return []
+
+    holiday_rows["festival_label"] = holiday_rows.apply(
+        lambda row: row["festival_category"]
+        if row.get("festival_category") not in (None, "", "Other")
+        else row.get("holiday_name"),
+        axis=1,
+    )
+
     festival_sales = (
-        enriched_df[enriched_df["festival_category"].notna()]
-        .groupby("festival_category")["sales"]
+        holiday_rows[holiday_rows["festival_label"].notna()]
+        .groupby("festival_label")["sales"]
         .mean()
         .sort_values(ascending=False)
         .head(5)
@@ -750,6 +761,92 @@ def _chart_history(series_df: pd.DataFrame, granularity: str) -> list[dict[str, 
     return _serialize_dates(history_df.to_dict("records"))
 
 
+def build_forecast_summary(
+    historical_series_df: pd.DataFrame,
+    forecast_records: list[dict[str, Any]],
+    granularity: str,
+) -> dict[str, Any]:
+    if not forecast_records:
+        return {
+            "average_predicted_sales": 0.0,
+            "cumulative_predicted_sales": 0.0,
+            "peak_forecast_sales": 0.0,
+            "peak_forecast_date": None,
+            "projected_growth_pct": 0.0,
+            "projected_direction": "stable",
+            "current_average_sales": 0.0,
+            "latest_actual_sales": 0.0,
+            "comparison_to_current": {
+                "baseline_window_points": 0,
+                "current_average_sales": 0.0,
+                "forecast_average_sales": 0.0,
+                "delta_sales": 0.0,
+                "delta_pct": 0.0,
+                "next_period_forecast": 0.0,
+                "next_period_delta_pct": 0.0,
+            },
+        }
+
+    profile = FREQUENCY_PROFILES[granularity]
+    future_df = pd.DataFrame(forecast_records).copy()
+    future_df["date"] = pd.to_datetime(future_df["date"])
+    future_df["predicted_sales"] = pd.to_numeric(future_df["predicted_sales"], errors="coerce").fillna(0.0)
+
+    first_half = future_df["predicted_sales"].head(max(1, len(future_df) // 2)).mean()
+    second_half = future_df["predicted_sales"].tail(max(1, len(future_df) // 2)).mean()
+    projected_growth = _safe_growth(float(second_half), float(first_half)) if first_half else 0.0
+
+    if projected_growth > 5:
+        projected_direction = "upward"
+    elif projected_growth < -5:
+        projected_direction = "downward"
+    else:
+        projected_direction = "stable"
+
+    peak_row = future_df.loc[future_df["predicted_sales"].idxmax()]
+    comparison_window = min(profile["comparison_window"], len(historical_series_df))
+    current_average_sales = (
+        float(historical_series_df["sales"].tail(comparison_window).mean())
+        if comparison_window
+        else 0.0
+    )
+    latest_actual_sales = (
+        float(historical_series_df["sales"].iloc[-1])
+        if not historical_series_df.empty
+        else 0.0
+    )
+    average_predicted_sales = float(future_df["predicted_sales"].mean())
+    next_period_forecast = (
+        float(future_df["predicted_sales"].iloc[0])
+        if not future_df.empty
+        else 0.0
+    )
+
+    return {
+        "average_predicted_sales": _round_or_zero(average_predicted_sales),
+        "cumulative_predicted_sales": _round_or_zero(future_df["predicted_sales"].sum()),
+        "peak_forecast_sales": _round_or_zero(peak_row["predicted_sales"]),
+        "peak_forecast_date": peak_row["date"].date().isoformat(),
+        "projected_growth_pct": projected_growth,
+        "projected_direction": projected_direction,
+        "current_average_sales": _round_or_zero(current_average_sales),
+        "latest_actual_sales": _round_or_zero(latest_actual_sales),
+        "comparison_to_current": {
+            "baseline_window_points": comparison_window,
+            "current_average_sales": _round_or_zero(current_average_sales),
+            "forecast_average_sales": _round_or_zero(average_predicted_sales),
+            "delta_sales": _round_or_zero(average_predicted_sales - current_average_sales),
+            "delta_pct": _safe_growth(average_predicted_sales, current_average_sales)
+            if current_average_sales > 0
+            else 0.0,
+            "next_period_forecast": _round_or_zero(next_period_forecast),
+            "next_period_delta_pct": _safe_growth(next_period_forecast, latest_actual_sales)
+            if latest_actual_sales > 0
+            else 0.0,
+        },
+    }
+
+
 def generate_forecast(
     item: dict[str, Any],
     calendar,
@@ -769,7 +866,10 @@ def generate_forecast(
 
     prophet_df = series_df.rename(columns={"date": "ds", "sales": "y"}).copy()
     festival_features = calendar.add_festival_features(series_df.copy(), "date")
-    festival_regressor = festival_features["days_to_festival"].apply(lambda value: 1 if abs(value) <= 7 else 0)
+    festival_regressor = (
+        festival_features["nearest_festival"].notna()
+        & festival_features["days_to_festival"].abs().le(7)
+    ).astype(int)
     use_festival_regressor = festival_regressor.nunique() > 1
 
     prophet_model = Prophet(
@@ -792,9 +892,10 @@ def generate_forecast(
     )
     if use_festival_regressor:
         future_features = calendar.add_festival_features(pd.DataFrame({"date": future["ds"]}), "date")
-        future["festival_impact"] = future_features["days_to_festival"].apply(
-            lambda value: 1 if abs(value) <= 7 else 0
-        )
+        future["festival_impact"] = (
+            future_features["nearest_festival"].notna()
+            & future_features["days_to_festival"].abs().le(7)
+        ).astype(int)
 
     forecast_df = prophet_model.predict(future)
     future_only = forecast_df[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(periods).copy()
@@ -812,24 +913,6 @@ def generate_forecast(
         for _, row in future_only.iterrows()
     ]
 
-    first_half = future_only["yhat"].head(max(1, len(future_only) // 2)).mean()
-    second_half = future_only["yhat"].tail(max(1, len(future_only) // 2)).mean()
-    projected_growth = _safe_growth(float(second_half), float(first_half)) if first_half else 0.0
-
-    if projected_growth > 5:
-        projected_direction = "upward"
-    elif projected_growth < -5:
-        projected_direction = "downward"
-    else:
-        projected_direction = "stable"
-
-    peak_row = future_only.loc[future_only["yhat"].idxmax()]
-    comparison_window = min(profile["comparison_window"], len(series_df))
-    current_average_sales = float(series_df["sales"].tail(comparison_window).mean()) if comparison_window else 0.0
-    latest_actual_sales = float(series_df["sales"].iloc[-1]) if not series_df.empty else 0.0
-    average_predicted_sales = float(future_only["yhat"].mean())
-    next_period_forecast = float(future_only["yhat"].iloc[0]) if not future_only.empty else 0.0
-
     return {
         "granularity": granularity,
         "selected_product": resolved_product,
@@ -837,29 +920,7 @@ def generate_forecast(
         "forecast_unit": profile["future_label"],
         "historical_series": _chart_history(series_df, granularity),
         "forecast": forecast_records,
-        "summary": {
-            "average_predicted_sales": _round_or_zero(average_predicted_sales),
-            "cumulative_predicted_sales": _round_or_zero(future_only["yhat"].sum()),
-            "peak_forecast_sales": _round_or_zero(peak_row["yhat"]),
-            "peak_forecast_date": peak_row["ds"].date().isoformat(),
-            "projected_growth_pct": projected_growth,
-            "projected_direction": projected_direction,
-            "current_average_sales": _round_or_zero(current_average_sales),
-            "latest_actual_sales": _round_or_zero(latest_actual_sales),
-            "comparison_to_current": {
-                "baseline_window_points": comparison_window,
-                "current_average_sales": _round_or_zero(current_average_sales),
-                "forecast_average_sales": _round_or_zero(average_predicted_sales),
-                "delta_sales": _round_or_zero(average_predicted_sales - current_average_sales),
-                "delta_pct": _safe_growth(average_predicted_sales, current_average_sales)
-                if current_average_sales > 0
-                else 0.0,
-                "next_period_forecast": _round_or_zero(next_period_forecast),
-                "next_period_delta_pct": _safe_growth(next_period_forecast, latest_actual_sales)
-                if latest_actual_sales > 0
-                else 0.0,
-            },
-        },
+        "summary": build_forecast_summary(series_df, forecast_records, granularity),
     }
 
 
@@ -880,7 +941,7 @@ class UploadStore:
         self._lock = Lock()
 
     def _purge_expired_locked(self) -> None:
-        cutoff = datetime.utcnow() - timedelta(minutes=self.ttl_minutes)
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=self.ttl_minutes)
         expired_keys = [
             upload_id
             for upload_id, item in self._items.items()
@@ -903,7 +964,7 @@ class UploadStore:
             self._items[upload_id] = {
                 "data": data,
                 "metadata": metadata,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(timezone.utc),
             }
         return upload_id
 

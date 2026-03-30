@@ -4,10 +4,9 @@ Production-oriented Flask backend for retail sales forecasting and analysis.
 
 from __future__ import annotations
 
-import json
 import os
-import pickle
 from pathlib import Path
+
 import pandas as pd
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
@@ -18,6 +17,7 @@ try:
     from .analytics_engine import (
         UploadStore,
         analyze_dataset,
+        build_forecast_summary,
         generate_forecast,
         prepare_uploaded_dataframe,
         read_uploaded_file,
@@ -31,6 +31,7 @@ except ImportError:
     from analytics_engine import (
         UploadStore,
         analyze_dataset,
+        build_forecast_summary,
         generate_forecast,
         prepare_uploaded_dataframe,
         read_uploaded_file,
@@ -49,93 +50,10 @@ load_dotenv(BASE_DIR / ".env")
 app = Flask(__name__)
 CORS(app)
 
-model = None
-encoders = {}
-feature_columns = None
-model_type = "unloaded"
 upload_store = UploadStore(
     ttl_minutes=int(os.getenv("UPLOAD_TTL_MINUTES", "90")),
     max_items=int(os.getenv("MAX_UPLOAD_SESSIONS", "25")),
 )
-
-DEFAULT_GEMINI_MODEL_CANDIDATES = [
-    "models/gemini-2.0-flash",
-    "models/gemini-flash-latest",
-    "models/gemini-2.5-flash",
-]
-
-
-def load_model() -> bool:
-    global model, encoders, feature_columns, model_type
-
-    integrated_model_path = MODELS_DIR / "integrated_sales_model.pkl"
-    original_model_path = MODELS_DIR / "sales_model.pkl"
-
-    try:
-        with integrated_model_path.open("rb") as model_file:
-            saved_data = pickle.load(model_file)
-        model = saved_data["model"]
-        encoders = saved_data.get("encoders", {})
-        feature_columns = saved_data["feature_columns"]
-        model_type = "integrated"
-        print("[OK] Integrated model loaded successfully.")
-        print(f"   Features: {len(feature_columns)}")
-        print(f"   Test R2: {saved_data['performance']['test_r2']:.4f}")
-        print(f"   Datasets: {', '.join(saved_data['training_info']['datasets_used'])}")
-        return True
-    except FileNotFoundError:
-        print("[WARNING] Integrated model not found, trying original model.")
-
-    try:
-        with original_model_path.open("rb") as model_file:
-            saved_data = pickle.load(model_file)
-        model = saved_data["model"]
-        encoders = saved_data.get("encoders", {})
-        feature_columns = saved_data["feature_columns"]
-        model_type = "original"
-        print("[OK] Original model loaded successfully.")
-        return True
-    except FileNotFoundError:
-        print("[ERROR] No trained model was found in backend/models.")
-        return False
-
-
-def ensure_model_loaded() -> bool:
-    if model is not None:
-        return True
-    return load_model()
-
-
-def preprocess_input(data: dict) -> pd.DataFrame:
-    df = pd.DataFrame([data])
-
-    fat_content_mapping = {
-        "low fat": "Low Fat",
-        "LF": "Low Fat",
-        "reg": "Regular",
-        "Low Fat": "Low Fat",
-        "Regular": "Regular",
-    }
-    df["Item_Fat_Content"] = df["Item_Fat_Content"].map(fat_content_mapping)
-
-    categorical_columns = [
-        "Item_Identifier",
-        "Item_Fat_Content",
-        "Item_Type",
-        "Outlet_Identifier",
-        "Outlet_Size",
-        "Outlet_Location_Type",
-        "Outlet_Type",
-    ]
-
-    for column in categorical_columns:
-        if column in encoders:
-            try:
-                df[column] = encoders[column].transform(df[column])
-            except ValueError:
-                df[column] = 0
-
-    return df[feature_columns]
 
 
 def _resolve_item_from_payload(payload: dict) -> dict:
@@ -164,51 +82,6 @@ def _get_json_payload() -> dict:
     return payload
 
 
-def _build_ai_prompt(language: str, product_name: str, context: dict | None, summary: str) -> str:
-    context_text = json.dumps(context or {}, ensure_ascii=False, indent=2)
-    return f"""
-You are a senior retail revenue strategist.
-Analyze the uploaded sales dataset and explain the business situation clearly.
-
-Context scope: {product_name}
-Required response language: {language}
-
-Structured analytics context:
-{context_text}
-
-Fallback summary:
-{summary}
-
-Write the response with these exact sections:
-## Current Sales Health
-## Future Outlook
-## Product Focus
-## Actions to Improve Sales
-
-Rules:
-- Respond only in {language}.
-- Use clear markdown headings and flat bullet lists.
-- Ground every point in the provided metrics.
-- If the data granularity is monthly or yearly, mention that day-level signals may be hidden.
-- Under Actions to Improve Sales, provide exactly 3 concrete actions.
-"""
-
-
-def _format_metric(value, suffix: str = "") -> str:
-    if value is None:
-        return "0"
-    try:
-        numeric_value = float(value)
-    except (TypeError, ValueError):
-        return str(value)
-
-    if suffix == "%":
-        return f"{numeric_value:+.2f}%"
-    if numeric_value.is_integer():
-        return f"{int(numeric_value)}{suffix}"
-    return f"{numeric_value:.2f}{suffix}"
-
-
 @app.route("/")
 def home():
     return jsonify(
@@ -216,8 +89,6 @@ def home():
             "message": "Retail sales analytics API is running.",
             "version": "3.0",
             "endpoints": {
-                "predict": "/api/predict",
-                "batch_predict": "/api/batch-predict",
                 "upload_csv": "/api/upload-csv",
                 "product_search": "/api/products/search",
                 "forecast": "/api/forecast",
@@ -233,112 +104,16 @@ def home():
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
-    if not ensure_model_loaded():
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "model_loaded": False,
-                    "message": "Prediction model is not loaded.",
-                }
-            ),
-            500,
-        )
-
     return jsonify(
         {
             "status": "healthy",
-            "model_loaded": True,
-            "model_type": model_type,
+            "runtime_mode": "upload_forecasting",
+            "forecasting_stack": ["Prophet", "XGBoost ensemble", "market holidays", "Groq AI"],
             "active_upload_sessions": upload_store.count(),
+            "upload_ttl_minutes": upload_store.ttl_minutes,
+            "max_upload_sessions": upload_store.max_items,
         }
     )
-
-
-@app.route("/api/predict", methods=["POST"])
-def predict_sales():
-    try:
-        data = _get_json_payload()
-
-        required_fields = [
-            "Item_Identifier",
-            "Item_Weight",
-            "Item_Fat_Content",
-            "Item_Visibility",
-            "Item_Type",
-            "Item_MRP",
-            "Outlet_Identifier",
-            "Outlet_Establishment_Year",
-            "Outlet_Size",
-            "Outlet_Location_Type",
-            "Outlet_Type",
-        ]
-
-        missing_fields = [field for field in required_fields if field not in data]
-        if missing_fields:
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "error": f"Missing required fields: {', '.join(missing_fields)}",
-                    }
-                ),
-                400,
-            )
-
-        if not ensure_model_loaded():
-            return jsonify({"success": False, "error": "Model not loaded"}), 500
-        
-        prediction = model.predict(preprocess_input(data))[0]
-        return jsonify(
-            {
-                "success": True,
-                "predicted_sales": round(float(prediction), 2),
-                "input_data": data,
-            }
-        )
-    except Exception as error:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "error": str(error),
-                    "message": "Prediction failed.",
-                }
-            ),
-            500,
-        )
-
-
-@app.route("/api/batch-predict", methods=["POST"])
-def batch_predict():
-    try:
-        payload = _get_json_payload()
-        items = payload.get("items", [])
-        if not items:
-            return jsonify({"success": False, "error": "No items were provided."}), 400
-        if not ensure_model_loaded():
-            return jsonify({"success": False, "error": "Model not loaded"}), 500
-
-        predictions = []
-        for item in items:
-            prediction = model.predict(preprocess_input(item))[0]
-            predictions.append(
-                {
-                    "item": item.get("Item_Identifier", "Unknown"),
-                    "predicted_sales": round(float(prediction), 2),
-                }
-            )
-
-        return jsonify(
-            {
-                "success": True,
-                "predictions": predictions,
-                "total_items": len(predictions),
-            }
-        )
-    except Exception as error:
-        return jsonify({"success": False, "error": str(error)}), 500
 
 
 @app.route("/api/upload-csv", methods=["POST"])
@@ -434,30 +209,60 @@ def forecast():
                 prophet_forecast_df['yhat_upper'] = prophet_forecast_df['upper_bound']
                 
                 # Filter item data for the selected product if needed
-                filtered_df, _ = filter_dataset_by_product(item, payload.get("selected_product"))
+                selected_product = payload.get("selected_product")
+                filtered_df, _ = filter_dataset_by_product(item, selected_product)
+                ensemble_scope = (
+                    ensemble_engine.PRODUCT_SCOPE
+                    if selected_product
+                    else ensemble_engine.AGGREGATE_SCOPE
+                )
                 
                 ensemble_forecast, confidence, w_prophet, w_xgb = ensemble_engine.predict_ensemble(
                     prophet_forecast_df,
                     upload_id,
                     filtered_df,
-                    calendar=festival_calendar
+                    calendar=festival_calendar,
+                    scope=ensemble_scope,
                 )
                 
                 # Update result with ensemble predictions and metadata
                 result['forecast'] = ensemble_forecast
+                historical_series_df = pd.DataFrame(result.get('historical_series', []))
+                if not historical_series_df.empty:
+                    historical_series_df['date'] = pd.to_datetime(historical_series_df['date'])
+                    historical_series_df['sales'] = pd.to_numeric(historical_series_df['sales'], errors='coerce').fillna(0.0)
+                    result['summary'] = build_forecast_summary(
+                        historical_series_df,
+                        ensemble_forecast,
+                        result['granularity'],
+                    )
                 result['confidence'] = confidence
                 result['ensemble_weights'] = {"prophet": w_prophet, "xgb": w_xgb}
                 
-                # Calculate metrics (placeholders if not already calculated during training)
-                if 'training_metrics' in item['metadata']:
+                # Scope-aware ensemble metrics
+                if 'training_metrics' in item['metadata'] and isinstance(item['metadata']['training_metrics'], dict):
+                    scope_metrics = item['metadata']['training_metrics'].get(ensemble_scope)
+                    if scope_metrics is None and ensemble_scope != ensemble_engine.AGGREGATE_SCOPE:
+                        scope_metrics = item['metadata']['training_metrics'].get(ensemble_engine.AGGREGATE_SCOPE)
+
+                    if scope_metrics:
+                        result['metrics'] = {
+                            "rmse": scope_metrics.get('rmse'),
+                            "mae": scope_metrics.get('mae'),
+                            "row_count": scope_metrics.get('row_count'),
+                            "series_count": scope_metrics.get('series_count'),
+                            "scope": scope_metrics.get('scope'),
+                        }
+                    else:
+                        result['metrics'] = {
+                            "row_count": len(result.get('historical_series', [])),
+                            "scope": ensemble_scope,
+                        }
+                elif 'training_metrics' in item['metadata']:
                     result['metrics'] = {
                         "rmse": item['metadata']['training_metrics'].get('rmse'),
                         "mae": item['metadata']['training_metrics'].get('mae'),
                         "row_count": item['metadata']['training_metrics'].get('row_count')
-                    }
-                else:
-                    result['metrics'] = {
-                        "row_count": len(filtered_df)
                     }
             except Exception as e:
                 print(f"[Ensemble Error] {e}")
@@ -567,16 +372,26 @@ def get_holidays():
 
 @app.route("/api/model-info", methods=["GET"])
 def model_info():
-    if not ensure_model_loaded():
-        return jsonify({"success": False, "message": "Model not loaded."}), 500
-
     return jsonify(
         {
             "success": True,
-            "model_type": model_type,
-            "features": feature_columns,
-            "num_features": len(feature_columns),
-            "encoders_loaded": list(encoders.keys()),
+            "runtime_mode": "upload_forecasting",
+            "forecast_engine": {
+                "base_model": "Prophet",
+                "ensemble_model": "XGBoost",
+                "holiday_support": True,
+                "ai_provider": "Groq",
+            },
+            "upload_sessions": {
+                "active": upload_store.count(),
+                "ttl_minutes": upload_store.ttl_minutes,
+                "max_sessions": upload_store.max_items,
+            },
+            "session_model_artifacts": {
+                "directory": str(MODELS_DIR),
+                "aggregate_pattern": "*_aggregate_xgb.json",
+                "product_pattern": "*_product_xgb.json",
+            },
             "festival_support": True,
         }
     )
@@ -658,7 +473,7 @@ def ai_insights():
         return jsonify({
             "success": True, 
             "insights": insight,
-            "model": "groq-llama-3.3-70b"
+            "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
         })
     except Exception as error:
         return jsonify({
@@ -669,8 +484,5 @@ def ai_insights():
 
 
 if __name__ == "__main__":
-    if ensure_model_loaded():
-        print("[INFO] Starting Flask server on http://127.0.0.1:5000")
-        app.run(debug=True, host="0.0.0.0", port=5000)
-    else:
-        print("[WARNING] Train a model before starting the API.")
+    print("[INFO] Starting Flask server on http://127.0.0.1:5000")
+    app.run(debug=True, host="0.0.0.0", port=5000)

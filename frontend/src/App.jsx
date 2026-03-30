@@ -6,20 +6,6 @@ import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const initialLegacyForm = {
-  Item_Identifier: '',
-  Item_Weight: '',
-  Item_Fat_Content: 'Low Fat',
-  Item_Visibility: '',
-  Item_Type: 'Dairy',
-  Item_MRP: '',
-  Outlet_Identifier: '',
-  Outlet_Establishment_Year: '',
-  Outlet_Size: 'Medium',
-  Outlet_Location_Type: 'Tier 1',
-  Outlet_Type: 'Supermarket Type1',
-};
-
 const MARKETS = [
   { code: 'IN', label: 'India', currency: 'INR', locale: 'en-IN' },
   { code: 'US', label: 'United States', currency: 'USD', locale: 'en-US' },
@@ -58,10 +44,15 @@ function MetricCard({ label, value, hint, accent = 'slate' }) {
   };
 
   return (
-    <div className={`rounded-3xl border p-5 shadow-sm ${accents[accent] || accents.slate}`}>
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold">{value}</p>
-      {hint ? <p className="mt-2 text-sm text-slate-600">{hint}</p> : null}
+    <div className={`min-w-0 rounded-3xl border p-5 shadow-sm ${accents[accent] || accents.slate}`}>
+      <p className="break-words text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</p>
+      <p
+        className="mt-3 break-words text-[clamp(1.35rem,2.6vw,1.875rem)] font-semibold leading-tight [overflow-wrap:anywhere]"
+        title={String(value ?? '')}
+      >
+        {value}
+      </p>
+      {hint ? <p className="mt-2 break-words text-sm text-slate-600">{hint}</p> : null}
     </div>
   );
 }
@@ -209,9 +200,6 @@ function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
-  const [legacyFormData, setLegacyFormData] = useState(initialLegacyForm);
-  const [legacyPrediction, setLegacyPrediction] = useState(null);
-  const [legacyLoading, setLegacyLoading] = useState(false);
 
   const deferredProductQuery = useDeferredValue(productQuery);
 
@@ -275,6 +263,7 @@ function App() {
   async function handleFileSelected(file) {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('country_code', market);
 
     setUploading(true);
     setError('');
@@ -510,39 +499,6 @@ function App() {
       setError(getRequestErrorMessage(requestError, 'AI insight generation failed.'));
     } finally {
       setAiLoading(false);
-    }
-  }
-
-  function handleLegacyFormChange(event) {
-    const { name, value } = event.target;
-    setLegacyFormData((previousState) => ({ ...previousState, [name]: value }));
-  }
-
-  async function submitLegacyPrediction(event) {
-    event.preventDefault();
-    setLegacyLoading(true);
-    setLegacyPrediction(null);
-    setError('');
-
-    try {
-      const payload = {
-        ...legacyFormData,
-        Item_Weight: Number(legacyFormData.Item_Weight),
-        Item_Visibility: Number(legacyFormData.Item_Visibility),
-        Item_MRP: Number(legacyFormData.Item_MRP),
-        Outlet_Establishment_Year: Number(legacyFormData.Outlet_Establishment_Year),
-      };
-
-      const response = await axios.post(`${API_URL}/predict`, payload);
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'Legacy prediction failed.');
-      }
-
-      setLegacyPrediction(response.data.predicted_sales);
-    } catch (requestError) {
-      setError(getRequestErrorMessage(requestError, 'Legacy prediction failed.'));
-    } finally {
-      setLegacyLoading(false);
     }
   }
 
@@ -1040,137 +996,6 @@ function App() {
             </>
           ) : null}
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Legacy model</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Single-item prediction endpoint</h2>
-              <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                This form remains available for the original attribute-driven prediction API. It is separate from
-                the uploaded time-series analysis flow.
-              </p>
-            </div>
-            <form onSubmit={submitLegacyPrediction} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <input
-                type="text"
-                name="Item_Identifier"
-                value={legacyFormData.Item_Identifier}
-                onChange={handleLegacyFormChange}
-                placeholder="Item identifier"
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-                required
-              />
-              <input
-                type="number"
-                step="0.01"
-                name="Item_Weight"
-                value={legacyFormData.Item_Weight}
-                onChange={handleLegacyFormChange}
-                placeholder="Weight"
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-                required
-              />
-              <input
-                type="number"
-                step="0.0001"
-                name="Item_Visibility"
-                value={legacyFormData.Item_Visibility}
-                onChange={handleLegacyFormChange}
-                placeholder="Visibility"
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-                required
-              />
-              <input
-                type="number"
-                step="0.01"
-                name="Item_MRP"
-                value={legacyFormData.Item_MRP}
-                onChange={handleLegacyFormChange}
-                placeholder="MRP"
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-                required
-              />
-              <input
-                type="text"
-                name="Item_Type"
-                value={legacyFormData.Item_Type}
-                onChange={handleLegacyFormChange}
-                placeholder="Item type"
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-                required
-              />
-              <select
-                name="Item_Fat_Content"
-                value={legacyFormData.Item_Fat_Content}
-                onChange={handleLegacyFormChange}
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-              >
-                <option value="Low Fat">Low Fat</option>
-                <option value="Regular">Regular</option>
-              </select>
-              <input
-                type="text"
-                name="Outlet_Identifier"
-                value={legacyFormData.Outlet_Identifier}
-                onChange={handleLegacyFormChange}
-                placeholder="Outlet identifier"
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-                required
-              />
-              <input
-                type="number"
-                name="Outlet_Establishment_Year"
-                value={legacyFormData.Outlet_Establishment_Year}
-                onChange={handleLegacyFormChange}
-                placeholder="Established year"
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-                required
-              />
-              <select
-                name="Outlet_Size"
-                value={legacyFormData.Outlet_Size}
-                onChange={handleLegacyFormChange}
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-              >
-                <option value="Small">Small</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
-              <select
-                name="Outlet_Location_Type"
-                value={legacyFormData.Outlet_Location_Type}
-                onChange={handleLegacyFormChange}
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-              >
-                <option value="Tier 1">Tier 1</option>
-                <option value="Tier 2">Tier 2</option>
-                <option value="Tier 3">Tier 3</option>
-              </select>
-              <select
-                name="Outlet_Type"
-                value={legacyFormData.Outlet_Type}
-                onChange={handleLegacyFormChange}
-                className="rounded-2xl border border-slate-300 px-4 py-3"
-              >
-                <option value="Supermarket Type1">Supermarket Type1</option>
-                <option value="Supermarket Type2">Supermarket Type2</option>
-                <option value="Supermarket Type3">Supermarket Type3</option>
-                <option value="Grocery Store">Grocery Store</option>
-              </select>
-              <button
-                type="submit"
-                disabled={legacyLoading}
-                className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {legacyLoading ? 'Predicting' : 'Run legacy prediction'}
-              </button>
-            </form>
-            {legacyPrediction !== null ? (
-              <div className="mt-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Prediction result</p>
-                <p className="mt-3 text-3xl font-semibold text-emerald-900">{formatCurrency(legacyPrediction, market)}</p>
-              </div>
-            ) : null}
-          </section>
         </div>
       </main>
     </div>
