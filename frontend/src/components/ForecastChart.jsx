@@ -3,8 +3,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Label,
-  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -97,6 +95,7 @@ function ForecastChart({
     const chartHeight = expanded ? 620 : 420;
     const visibleFestivalItems = expanded ? festivals : festivals.slice(0, 12);
     const hiddenFestivalCount = Math.max(festivals.length - visibleFestivalItems.length, 0);
+    const hasForecastQuality = Boolean(confidence || metrics);
 
     return (
       <div className={expanded ? 'flex h-full flex-col' : 'rounded-3xl border border-slate-200 bg-white p-6 shadow-sm'}>
@@ -185,56 +184,6 @@ function ForecastChart({
                 />
               ))}
 
-              {forecastData.length > 0 ? (
-                <ReferenceArea
-                  x1={forecastData[0]?.date}
-                  x2={forecastData[forecastData.length - 1]?.date}
-                  fill="#f8fafc"
-                  fillOpacity={0.5}
-                  strokeOpacity={0.3}
-                >
-                  <Label
-                    content={({ viewBox }) => {
-                      const { x, y } = viewBox;
-                      return (
-                        <g>
-                          <foreignObject x={x + 10} y={y + (expanded ? 140 : 110)} width={expanded ? 220 : 200} height="150">
-                            <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm backdrop-blur-sm">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Confidence</span>
-                                <span
-                                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                    isHighConfidence ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                  }`}
-                                >
-                                  {confidence || 'Analysis Pending'}
-                                </span>
-                              </div>
-                              {metrics ? (
-                                <div className="space-y-1 border-t border-slate-100 pt-2">
-                                  <div className="flex justify-between text-[10px]">
-                                    <span className="text-slate-500">RMSE</span>
-                                    <span className="font-mono font-bold text-slate-800">{metrics.rmse?.toFixed(2) || 'N/A'}</span>
-                                  </div>
-                                  <div className="flex justify-between text-[10px]">
-                                    <span className="text-slate-500">MAE</span>
-                                    <span className="font-mono font-bold text-slate-800">{metrics.mae?.toFixed(2) || 'N/A'}</span>
-                                  </div>
-                                  <div className="flex justify-between text-[10px]">
-                                    <span className="text-slate-500">Rows Trained</span>
-                                    <span className="font-mono font-bold text-slate-800">{metrics.row_count || '0'}</span>
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          </foreignObject>
-                        </g>
-                      );
-                    }}
-                  />
-                </ReferenceArea>
-              ) : null}
-
               <Area
                 type="monotone"
                 dataKey="sales"
@@ -257,6 +206,47 @@ function ForecastChart({
             </AreaChart>
           </ResponsiveContainer>
         </div>
+
+        {hasForecastQuality ? (
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Forecast Quality</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  This label is based on ensemble behavior and available training history, so it is shown outside the chart as forecast metadata instead of covering the graph.
+                </p>
+              </div>
+              <span
+                className={`inline-flex w-fit rounded-full px-3 py-1 text-sm font-semibold ${
+                  isHighConfidence ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                }`}
+              >
+                {confidence || 'Analysis Pending'}
+              </span>
+            </div>
+
+            {metrics ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">RMSE</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-900">{metrics.rmse?.toFixed(2) || 'N/A'}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">MAE</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-900">{metrics.mae?.toFixed(2) || 'N/A'}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Rows Trained</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-900">{metrics.row_count || '0'}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Scope</p>
+                  <p className="mt-2 break-words text-lg font-semibold text-slate-900">{metrics.scope || 'forecast'}</p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {festivals.length ? (
           <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
