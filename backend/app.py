@@ -408,12 +408,15 @@ def ai_insights():
         forecast_context = context.get("forecast") or {}
         analysis_summary = analysis_context.get("summary") or {}
         forecast_summary = forecast_context.get("summary") or {}
+        metadata = item.get("metadata", {}) if item else {}
+        dataset_stats = metadata.get("stats") or {}
         
         sales_summary = {
             "scope": data.get("product_name") or "All products",
             "total_sales": data.get("total_sales")
             or analysis_summary.get("total_sales")
             or data.get("summary", "N/A"),
+            "average_sales": analysis_summary.get("average_sales", dataset_stats.get("average_sales", "N/A")),
             "trend": data.get("trend")
             or analysis_summary.get("trend_direction")
             or "stable",
@@ -427,8 +430,17 @@ def ai_insights():
             or "Daily",
             "current_run_rate": analysis_summary.get("current_run_rate", "N/A"),
             "latest_sales": analysis_summary.get("latest_sales", "N/A"),
+            "volatility_pct": analysis_summary.get("volatility_pct", "N/A"),
             "forecast_direction": forecast_summary.get("projected_direction", "stable"),
             "forecast_total": forecast_summary.get("cumulative_predicted_sales", "N/A"),
+            "peak_forecast_date": forecast_summary.get("peak_forecast_date", "N/A"),
+            "peak_forecast_sales": forecast_summary.get("peak_forecast_sales", "N/A"),
+            "comparison_to_current": forecast_summary.get("comparison_to_current") or {},
+            "trend_highlights": analysis_context.get("trend_highlights") or {},
+            "recent_periods": analysis_context.get("recent_periods") or [],
+            "festival_impact": analysis_context.get("festival_impact") or {},
+            "top_festivals": analysis_context.get("top_festivals") or [],
+            "dataset_stats": dataset_stats,
         }
         
         selected_product_stats = analysis_context.get("selected_product_stats")
@@ -458,6 +470,21 @@ def ai_insights():
                             "share_of_catalog_sales_pct": round(share, 2),
                         }
                     )
+
+        if item and "metadata" in item:
+            product_summary = item["metadata"].get("product_summary")
+            if product_summary is not None and not product_summary.empty:
+                slow_products = []
+                for _, row in product_summary.tail(3).iterrows():
+                    slow_products.append(
+                        {
+                            "product": row["product_key"],
+                            "total_sales": round(float(row["total_sales"]), 2),
+                            "average_sales": round(float(row["average_sales"]), 2),
+                            "rank": int(row["rank"]),
+                        }
+                    )
+                sales_summary["slow_products"] = slow_products
 
         if item and "metadata" in item:
             sales_summary["granularity"] = item["metadata"].get(

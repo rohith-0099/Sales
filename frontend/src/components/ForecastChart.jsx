@@ -213,7 +213,7 @@ function ForecastChart({
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Forecast Quality</p>
                 <p className="mt-1 text-sm text-slate-600">
-                  This label is based on ensemble behavior and available training history, so it is shown outside the chart as forecast metadata instead of covering the graph.
+                  This label is based on ensemble behavior and available training history, so it is shown outside the chart as forecast metadata.
                 </p>
               </div>
               <span
@@ -254,7 +254,7 @@ function ForecastChart({
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Festival Markers</p>
                 <p className="mt-1 text-sm text-slate-600">
-                  Amber dashed lines on the chart match the festival dates listed here, so labels stay readable.
+                  Amber dashed lines on the chart match the festival dates listed here.
                 </p>
               </div>
               <p className="text-sm font-medium text-slate-500">

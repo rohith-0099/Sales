@@ -951,10 +951,10 @@ function App() {
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">AI Analyst</p>
-                    <h3 className="text-2xl font-semibold text-slate-900">AI analyst brief</h3>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Shopkeeper Assistant</p>
+                    <h3 className="text-2xl font-semibold text-slate-900">Business and sales advisor</h3>
                     <p className="mt-2 text-sm text-slate-600">
-                      Get a short brief with the core problem, where to focus now, and a future sales strategy.
+                      Get practical advice from the uploaded dataset about weak areas, products to push, and actions that can help the shop improve sales.
                     </p>
                   </div>
                   <div className="w-full md:w-64">
@@ -984,7 +984,7 @@ function App() {
                     disabled={aiLoading}
                     className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {aiLoading ? 'Generating brief' : 'Generate short brief'}
+                    {aiLoading ? 'Generating advice' : 'Generate shopkeeper advice'}
                   </button>
                 </div>
                 {aiInsights ? (
