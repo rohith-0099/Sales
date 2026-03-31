@@ -13,6 +13,8 @@ build/
 # *.pkl
 # *.h5
 # *.model
+backend/models/*_aggregate_xgb.json
+backend/models/*_product_xgb.json
 
 # Data
 # *.csv

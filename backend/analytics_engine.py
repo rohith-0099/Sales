@@ -223,6 +223,17 @@ def _clean_text(series: pd.Series) -> pd.Series:
     return text.replace({"": pd.NA, "nan": pd.NA, "None": pd.NA})
 
 
+def _normalize_product_text(value: Any) -> str:
+    if value is None or pd.isna(value):
+        return ""
+    return re.sub(r"\s+", " ", str(value).strip().lower())
+
+
+def _canonical_product_text(value: Any) -> str:
+    normalized = _normalize_product_text(value)
+    return re.sub(r"[^a-z0-9]+", "", normalized)
+
+
 def _coerce_numeric(series: pd.Series) -> pd.Series:
     if pd.api.types.is_numeric_dtype(series):
         return pd.to_numeric(series, errors="coerce")
@@ -315,18 +326,20 @@ def _build_product_columns(df: pd.DataFrame, column_map: dict[str, str]) -> dict
             "primary_column": None,
             "lookup_columns": [],
             "display_series": pd.Series(pd.NA, index=df.index),
+            "identity_series": pd.Series(pd.NA, index=df.index, dtype="string"),
             "search_series": pd.Series("", index=df.index, dtype="string"),
         }
 
     name_values = _clean_text(df[product_name_column]) if product_name_column else pd.Series(pd.NA, index=df.index)
     id_values = _clean_text(df[product_id_column]) if product_id_column else pd.Series(pd.NA, index=df.index)
+    fallback_values = _clean_text(df[lookup_columns[0]])
 
     if product_name_column:
         display_values = name_values.copy()
     elif product_id_column:
         display_values = id_values.copy()
     else:
-        display_values = _clean_text(df[lookup_columns[0]])
+        display_values = fallback_values.copy()
 
     if product_name_column and product_id_column:
         missing_name = display_values.isna()
@@ -354,6 +367,11 @@ def _build_product_columns(df: pd.DataFrame, column_map: dict[str, str]) -> dict
         ~different_context,
         display_values + " (" + context_values + ")",
     )
+    display_values = _clean_text(display_values.where(display_values.notna(), fallback_values))
+
+    identity_values = id_values.where(id_values.notna(), name_values)
+    identity_values = identity_values.where(identity_values.notna(), fallback_values)
+    identity_series = identity_values.map(_canonical_product_text).astype("string").replace({"": pd.NA})
 
     search_parts = [_clean_text(df[column]).fillna("") for column in lookup_columns]
     search_frame = pd.concat(search_parts, axis=1) if search_parts else pd.DataFrame(index=df.index)
@@ -361,12 +379,14 @@ def _build_product_columns(df: pd.DataFrame, column_map: dict[str, str]) -> dict
         lambda row: " ".join([value for value in row if value]),
         axis=1,
     ).astype("string").str.lower()
+    distinct_products = int(identity_series.dropna().nunique())
 
     return {
-        "enabled": display_values.notna().any(),
+        "enabled": display_values.notna().any() and distinct_products >= 2,
         "primary_column": product_name_column or product_id_column or product_context_column or lookup_columns[0],
         "lookup_columns": lookup_columns,
         "display_series": display_values,
+        "identity_series": identity_series,
         "search_series": search_values,
     }
 
@@ -427,19 +447,47 @@ def build_upload_stats(df: pd.DataFrame, granularity: str) -> dict[str, Any]:
     }
 
 
-def build_product_summary(df: pd.DataFrame) -> pd.DataFrame:
-    product_rows = df[df["product_key"].notna()].copy()
-    if product_rows.empty:
-        return pd.DataFrame(
-            columns=["product_key", "total_sales", "average_sales", "record_count", "search_text"]
-        )
+def _pick_preferred_product_key(values: pd.Series) -> str | None:
+    unique_values = [value for value in pd.Series(values).dropna().astype(str).unique()]
+    if not unique_values:
+        return None
+    return sorted(
+        unique_values,
+        key=lambda value: ("(" not in value, -len(value), value.lower()),
+    )[0]
 
-    grouped = product_rows.groupby("product_key", as_index=False)
-    summary = grouped["sales"].agg(total_sales="sum", average_sales="mean", record_count="count")
-    search_text = grouped["product_search_text"].agg(
-        lambda values: " ".join(pd.Series(values).dropna().astype(str).unique())
+
+def _merge_product_search_text(values: pd.Series) -> str:
+    return " ".join(
+        dict.fromkeys(
+            token
+            for value in pd.Series(values).dropna().astype(str)
+            for token in value.split()
+            if token
+        )
     )
 
+
+def build_product_summary(df: pd.DataFrame) -> pd.DataFrame:
+    product_rows = df[df["product_identity"].notna()].copy()
+    if product_rows.empty:
+        return pd.DataFrame(
+            columns=[
+                "product_identity",
+                "product_key",
+                "total_sales",
+                "average_sales",
+                "record_count",
+                "search_text",
+            ]
+        )
+
+    grouped = product_rows.groupby("product_identity", as_index=False)
+    summary = grouped["sales"].agg(total_sales="sum", average_sales="mean", record_count="count")
+    product_key = grouped["product_key"].agg(_pick_preferred_product_key)
+    search_text = grouped["product_search_text"].agg(_merge_product_search_text)
+
+    summary["product_key"] = product_key["product_key"]
     summary["search_text"] = search_text["product_search_text"]
     summary = summary.sort_values(["total_sales", "product_key"], ascending=[False, True]).reset_index(drop=True)
     summary["rank"] = summary.index + 1
@@ -470,9 +518,11 @@ def prepare_uploaded_dataframe(df: pd.DataFrame) -> dict[str, Any]:
 
     product_meta = _build_product_columns(working_df, column_map)
     if product_meta["enabled"]:
+        working_df["product_identity"] = product_meta["identity_series"]
         working_df["product_key"] = product_meta["display_series"]
         working_df["product_search_text"] = product_meta["search_series"]
     else:
+        working_df["product_identity"] = pd.Series(pd.NA, index=working_df.index, dtype="string")
         working_df["product_key"] = pd.NA
         working_df["product_search_text"] = pd.Series("", index=working_df.index, dtype="string")
 
@@ -485,14 +535,23 @@ def prepare_uploaded_dataframe(df: pd.DataFrame) -> dict[str, Any]:
     if working_df.empty:
         raise ValueError("No valid rows remained after parsing dates and sales values.")
 
+    if product_meta["enabled"]:
+        canonical_keys = (
+            working_df.loc[working_df["product_identity"].notna(), ["product_identity", "product_key"]]
+            .groupby("product_identity")["product_key"]
+            .agg(_pick_preferred_product_key)
+        )
+        working_df["product_key"] = working_df["product_identity"].map(canonical_keys)
+
     granularity = infer_granularity(working_df["date"], hint)
     product_summary = build_product_summary(working_df)
+    product_enabled = bool(len(product_summary) >= 2)
 
     preview_columns = ["date", "sales"]
     for column in product_meta["lookup_columns"]:
         if column in working_df.columns and column not in preview_columns:
             preview_columns.append(column)
-    if product_meta["enabled"]:
+    if product_enabled:
         preview_columns.append("product_key")
 
     preview = _serialize_dates(working_df[preview_columns].head(10).to_dict("records"))
@@ -507,11 +566,11 @@ def prepare_uploaded_dataframe(df: pd.DataFrame) -> dict[str, Any]:
             "granularity": granularity,
             "stats": stats,
             "preview": preview,
-            "product_column": "product_key" if product_meta["enabled"] else None,
+            "product_column": "product_key" if product_enabled else None,
             "product_primary_column": product_meta["primary_column"],
             "product_lookup_columns": product_meta["lookup_columns"],
             "product_summary": product_summary,
-            "sample_products": product_summary.head(8)["product_key"].tolist(),
+            "sample_products": product_summary.head(8)["product_key"].tolist() if product_enabled else [],
         },
     }
 
@@ -521,18 +580,42 @@ def filter_dataset_by_product(item: dict[str, Any], selected_product: str | None
     if not selected_product:
         return df.copy(), None
 
-    product_value = selected_product.strip().lower()
+    product_value = selected_product.strip()
     if not product_value:
         return df.copy(), None
 
     if not item["metadata"]["product_column"]:
         raise ValueError("This upload does not contain product identifiers to filter on.")
 
-    matches = df["product_key"].fillna("").astype(str).str.lower() == product_value
-    if not bool(matches.any()):
+    product_value_key = _canonical_product_text(product_value)
+    if not product_value_key:
+        return df.copy(), None
+
+    display_matches = df["product_key"].fillna("").astype(str).map(_canonical_product_text) == product_value_key
+    matched_identities = df.loc[display_matches, "product_identity"].dropna().astype("string").unique()
+
+    if len(matched_identities) == 0:
+        for column in item["metadata"].get("product_lookup_columns", []):
+            if column not in df.columns:
+                continue
+            lookup_matches = _clean_text(df[column]).map(_canonical_product_text) == product_value_key
+            if not bool(lookup_matches.any()):
+                continue
+            matched_identities = df.loc[lookup_matches, "product_identity"].dropna().astype("string").unique()
+            if len(matched_identities) > 0:
+                break
+
+    if len(matched_identities) == 0:
         raise ValueError(f"Product `{selected_product}` was not found in the uploaded dataset.")
 
-    resolved_product = str(df.loc[matches, "product_key"].iloc[0])
+    if len(matched_identities) > 1:
+        raise ValueError(
+            f"Product `{selected_product}` matched multiple products. Please refine the product name or choose a suggestion."
+        )
+
+    resolved_identity = matched_identities[0]
+    matches = df["product_identity"].astype("string") == resolved_identity
+    resolved_product = str(df.loc[matches, "product_key"].dropna().iloc[0])
     return df.loc[matches].copy(), resolved_product
 
 
@@ -985,16 +1068,26 @@ def search_products(item: dict[str, Any], query: str = "", limit: int = 10) -> l
         return []
 
     search_text = query.strip().lower()
+    search_key = _canonical_product_text(query)
     candidates = product_summary.copy()
 
     if search_text:
-        mask = candidates["search_text"].fillna("").str.contains(search_text, regex=False)
+        raw_mask = candidates["search_text"].fillna("").str.contains(search_text, regex=False)
+        canonical_mask = (
+            candidates["search_text"].fillna("").map(_canonical_product_text).str.contains(search_key, regex=False)
+            if search_key
+            else False
+        )
+        mask = raw_mask | canonical_mask
         candidates = candidates.loc[mask].copy()
 
     if candidates.empty:
         return []
 
-    candidates["starts_with"] = candidates["product_key"].astype(str).str.lower().str.startswith(search_text)
+    display_text = candidates["product_key"].astype(str)
+    candidates["starts_with"] = display_text.str.lower().str.startswith(search_text) | display_text.map(
+        _canonical_product_text
+    ).str.startswith(search_key)
     candidates = candidates.sort_values(
         ["starts_with", "total_sales", "product_key"],
         ascending=[False, False, True],

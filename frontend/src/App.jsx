@@ -15,6 +15,58 @@ const MARKETS = [
   { code: 'CA', label: 'Canada', currency: 'CAD', locale: 'en-CA' },
 ];
 
+const FORECAST_HORIZON_OPTIONS = {
+  daily: [
+    { label: '7 Days', value: 7 },
+    { label: '30 Days', value: 30 },
+    { label: '90 Days', value: 90 },
+    { label: '180 Days', value: 180 },
+    { label: '365 Days', value: 365 },
+  ],
+  weekly: [
+    { label: '4 Weeks', value: 4 },
+    { label: '12 Weeks', value: 12 },
+    { label: '26 Weeks', value: 26 },
+    { label: '52 Weeks', value: 52 },
+  ],
+  monthly: [
+    { label: '3 Months', value: 3 },
+    { label: '6 Months', value: 6 },
+    { label: '12 Months', value: 12 },
+    { label: '24 Months', value: 24 },
+  ],
+  yearly: [
+    { label: '1 Year', value: 1 },
+    { label: '3 Years', value: 3 },
+    { label: '5 Years', value: 5 },
+  ],
+};
+
+const DEFAULT_FORECAST_HORIZONS = {
+  daily: 30,
+  weekly: 12,
+  monthly: 12,
+  yearly: 3,
+};
+
+function getForecastHorizonOptions(granularity = 'daily') {
+  return FORECAST_HORIZON_OPTIONS[granularity] || FORECAST_HORIZON_OPTIONS.daily;
+}
+
+function getDefaultForecastHorizon(granularity = 'daily') {
+  return DEFAULT_FORECAST_HORIZONS[granularity] || DEFAULT_FORECAST_HORIZONS.daily;
+}
+
+function getForecastUnitLabel(granularity = 'daily') {
+  const units = {
+    daily: 'days',
+    weekly: 'weeks',
+    monthly: 'months',
+    yearly: 'years',
+  };
+  return units[granularity] || 'periods';
+}
+
 function formatCurrency(value, marketCode = 'IN') {
   const market = MARKETS.find(m => m.code === marketCode) || MARKETS[0];
   const numericValue = Number(value ?? 0);
@@ -202,6 +254,8 @@ function App() {
   const [statusMessage, setStatusMessage] = useState('');
 
   const deferredProductQuery = useDeferredValue(productQuery);
+  const forecastHorizonOptions = getForecastHorizonOptions(granularity);
+  const forecastUnitLabel = getForecastUnitLabel(granularity);
 
   useEffect(() => {
     if (!uploadId || !productEnabled) {
@@ -235,6 +289,14 @@ function App() {
       window.clearTimeout(timerId);
     };
   }, [deferredProductQuery, productEnabled, uploadId]);
+
+  useEffect(() => {
+    if (forecastHorizonOptions.some((option) => option.value === forecastHorizon)) {
+      return;
+    }
+
+    setForecastHorizon(getDefaultForecastHorizon(granularity));
+  }, [forecastHorizon, forecastHorizonOptions, granularity]);
 
   function resetAnalysisState() {
     setHistoricalSeries([]);
@@ -297,14 +359,9 @@ function App() {
           rank: null,
         })),
       );
-        
-        // Auto-set default horizon based on granularity
-        const gran = response.data.granularity || 'daily';
-        if (gran === 'monthly') setForecastHorizon(12);
-        else if (gran === 'yearly') setForecastHorizon(3);
-        else setForecastHorizon(30);
 
-        setStatusMessage('Dataset uploaded successfully. Run analysis to generate forecasts and trends.');
+      setForecastHorizon(getDefaultForecastHorizon(response.data.granularity || 'daily'));
+      setStatusMessage('Dataset uploaded successfully. Run analysis to generate forecasts and trends.');
     } catch (requestError) {
       setUploadId('');
       setFileName('');
@@ -677,32 +734,6 @@ function App() {
                           setProductQuery(value);
                         }}
                       />
-                      
-                      <div className="mt-6">
-                        <span className="mb-2 block text-sm font-medium text-slate-700">Forecast Horizon</span>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            { label: '7 Days', value: 7 },
-                            { label: '30 Days', value: 30 },
-                            { label: '90 Days', value: 90 },
-                            { label: '12 Months', value: 12 },
-                            { label: '1 Year', value: 365 },
-                          ].map((opt) => (
-                            <button
-                              key={opt.label}
-                              type="button"
-                              onClick={() => setForecastHorizon(opt.value)}
-                              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                                forecastHorizon === opt.value
-                                  ? 'bg-amber-500 text-white'
-                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                              }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   ) : (
                     <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -710,6 +741,30 @@ function App() {
                       dataset only.
                     </p>
                   )}
+
+                  <div className="mt-6">
+                    <span className="mb-2 block text-sm font-medium text-slate-700">Forecast Horizon</span>
+                    <p className="mb-3 text-sm text-slate-500">
+                      These options are measured in {forecastUnitLabel} because this dataset was detected as{' '}
+                      {granularity}.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {forecastHorizonOptions.map((opt) => (
+                        <button
+                          key={`${granularity}-${opt.label}`}
+                          type="button"
+                          onClick={() => setForecastHorizon(opt.value)}
+                          className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                            forecastHorizon === opt.value
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="mt-6 flex flex-wrap gap-3">
                     <button
