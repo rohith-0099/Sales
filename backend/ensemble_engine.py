@@ -1,8 +1,15 @@
+import logging
+
 import pandas as pd
 import numpy as np
 from pathlib import Path
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from xgboost import XGBRegressor
+
+from logger import get_logger
+
+
+logger = get_logger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / "models"
@@ -143,32 +150,41 @@ def train_user_model(df, session_id, calendar=None):
     - aggregate: one time series built from all sales summed by date
     - product: per-product time series built from sales summed by product and date
     """
-    normalized_df = _normalize_product_keys(df)
-    has_real_product_scope = "product_key" in df.columns and df["product_key"].notna().any()
-    aggregate_series = _build_scope_series(normalized_df, AGGREGATE_SCOPE)
-    product_series = _build_scope_series(normalized_df, PRODUCT_SCOPE)
+    try:
+        logger.info(f"Starting model training for upload session: {session_id}")
+        
+        normalized_df = _normalize_product_keys(df)
+        has_real_product_scope = "product_key" in df.columns and df["product_key"].notna().any()
+        aggregate_series = _build_scope_series(normalized_df, AGGREGATE_SCOPE)
+        product_series = _build_scope_series(normalized_df, PRODUCT_SCOPE)
 
-    metrics = {
-        AGGREGATE_SCOPE: _train_scope_model(
-            aggregate_series,
-            session_id,
-            AGGREGATE_SCOPE,
-            calendar=calendar,
-        ),
-        PRODUCT_SCOPE: _train_scope_model(
-            product_series,
-            session_id,
-            PRODUCT_SCOPE,
-            calendar=calendar,
-        ) if has_real_product_scope else None,
-    }
+        logger.debug(f"Aggregate series size: {len(aggregate_series)}, Product scope enabled: {has_real_product_scope}")
 
-    if not metrics[AGGREGATE_SCOPE] and not metrics[PRODUCT_SCOPE]:
-        raise ValueError(
-            "Unable to train the ensemble model because no valid aggregated series were available."
-        )
+        metrics = {
+            AGGREGATE_SCOPE: _train_scope_model(
+                aggregate_series,
+                session_id,
+                AGGREGATE_SCOPE,
+                calendar=calendar,
+            ),
+            PRODUCT_SCOPE: _train_scope_model(
+                product_series,
+                session_id,
+                PRODUCT_SCOPE,
+                calendar=calendar,
+            ) if has_real_product_scope else None,
+        }
 
-    return metrics
+        if not metrics[AGGREGATE_SCOPE] and not metrics[PRODUCT_SCOPE]:
+            error_msg = "Unable to train the ensemble model because no valid aggregated series were available."
+            logger.error(f"Model training failed for {session_id}: {error_msg}")
+            raise ValueError(error_msg)
+
+        logger.info(f"Model training completed successfully for session: {session_id}")
+        return metrics
+    except Exception as e:
+        logger.error(f"Model training error for session {session_id}: {str(e)}")
+        raise
 
 
 def get_ensemble_weights(row_count):
