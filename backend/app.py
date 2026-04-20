@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from logger import get_logger
+
 try:
     from .ai_engine import get_ai_insight
     from .analytics_engine import (
@@ -40,6 +42,8 @@ except ImportError:
     )
     from market_holidays import get_calendar
     import ensemble_engine
+
+logger = get_logger(__name__)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -142,7 +146,7 @@ def upload_csv():
             )
             metadata["training_metrics"] = training_metrics
         except Exception as e:
-            print(f"[XGBoost Training Error] {e}")
+            logger.warning(f"XGBoost model training failed for upload {upload_id}: {str(e)}")
 
         return jsonify(
             {
@@ -265,7 +269,7 @@ def forecast():
                         "row_count": item['metadata']['training_metrics'].get('row_count')
                     }
             except Exception as e:
-                print(f"[Ensemble Error] {e}")
+                logger.error(f"Ensemble forecasting failed for upload {upload_id}: {str(e)}")
                 result['ensemble_error'] = str(e)
 
         return jsonify({"success": True, **result})
@@ -511,5 +515,6 @@ def ai_insights():
 
 
 if __name__ == "__main__":
-    print("[INFO] Starting Flask server on http://127.0.0.1:5000")
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    logger.info("Starting Flask server on http://0.0.0.0:5000")
+    is_debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=is_debug, host="0.0.0.0", port=5000)
