@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from config import get_config
 from logger import get_logger
 
 try:
@@ -44,19 +45,18 @@ except ImportError:
     import ensemble_engine
 
 logger = get_logger(__name__)
+config = get_config()
 
 
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / "models"
 
-load_dotenv(BASE_DIR / ".env")
-
 app = Flask(__name__)
 CORS(app)
 
 upload_store = UploadStore(
-    ttl_minutes=int(os.getenv("UPLOAD_TTL_MINUTES", "90")),
-    max_items=int(os.getenv("MAX_UPLOAD_SESSIONS", "25")),
+    ttl_minutes=config.upload.TTL_MINUTES,
+    max_items=config.upload.MAX_SESSIONS,
 )
 
 
@@ -515,6 +515,9 @@ def ai_insights():
 
 
 if __name__ == "__main__":
-    logger.info("Starting Flask server on http://0.0.0.0:5000")
-    is_debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(debug=is_debug, host="0.0.0.0", port=5000)
+    logger.info(f"Starting Flask server on http://{config.flask.HOST}:{config.flask.PORT}")
+    app.run(
+        debug=config.flask.DEBUG,
+        host=config.flask.HOST,
+        port=config.flask.PORT
+    )
