@@ -1,7 +1,13 @@
-import os
+import logging
 
-from dotenv import load_dotenv
 from groq import Groq
+
+from config import get_config
+from logger import get_logger
+
+
+logger = get_logger(__name__)
+config = get_config()
 
 
 LANGUAGE_INSTRUCTIONS = {
@@ -162,13 +168,12 @@ Write the response in these exact sections only:
 
 
 def get_ai_insight(sales_summary: dict, language: str = "English") -> str:
-    load_dotenv(override=True)
-
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key or "gsk_xxxx" in api_key:
+    api_key = config.ai.API_KEY
+    if not api_key or "gsk_xxxx" in api_key or not api_key.strip():
+        logger.warning("AI insights requested but GROQ_API_KEY not configured")
         return "AI insight unavailable: Please set a valid GROQ_API_KEY in backend/.env"
 
-    model_name = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model_name = config.ai.MODEL
     client = Groq(api_key=api_key)
     prompt = build_prompt(sales_summary, language)
 
@@ -191,7 +196,9 @@ def get_ai_insight(sales_summary: dict, language: str = "English") -> str:
             ],
             temperature=0.25,
             max_tokens=420,
+            timeout=config.ai.TIMEOUT,
         )
         return response.choices[0].message.content
     except Exception as error:
+        logger.error(f"Groq API call failed: {str(error)}")
         return f"AI insight unavailable: {error}"
