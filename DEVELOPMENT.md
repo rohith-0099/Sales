@@ -132,10 +132,15 @@ class TestMyModule(unittest.TestCase):
 ### Running Tests
 ```bash
 cd backend
-python -m pytest .              # Run all tests
-python -m pytest -v             # Verbose output
-python -m pytest tests/test_*.py # Run specific test file
+python smoke_test.py
+python test_product_logic.py
+
+cd ../frontend
+npm run build
+npm run lint
 ```
+
+These are the checks that map most directly to the current repository layout. The backend tests are standard `unittest` scripts, not a dedicated `pytest` test suite.
 
 ## Documentation Standards
 
@@ -172,6 +177,10 @@ def my_function(param1: str, param2: int) -> bool:
 - Show usage examples
 - List API endpoints or functions
 - Link to related documentation
+
+### Repository Source Of Truth
+- Use `explain.md` when older markdown docs conflict with the implementation.
+- Treat archived BigMart-oriented material as historical context unless the code path still references it.
 
 ## Git Workflow
 
