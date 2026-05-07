@@ -23,6 +23,14 @@ The live Flask API (`app.py`) uses **upload-driven runtime forecasting** instead
 - Per-upload Prophet + XGBoost ensemble
 - No dependency on pre-trained model bundles
 - Models are trained dynamically on each uploaded dataset
+- Upload sessions are stored in memory only
+- Session-specific XGBoost JSON files are written to `backend/models/`
+
+## Archived Artifacts
+
+- `models/sales_model.pkl` belongs to the older BigMart-style phase.
+- `models/integrated_sales_model.pkl` belongs to the integrated offline training workflow.
+- `unified_data_processor.py` can assign synthetic dates when combining source datasets, so its output should be described as engineered training data rather than pure operational history.
 
 ## Running Archived Scripts
 
