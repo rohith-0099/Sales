@@ -1,140 +1,48 @@
-# Kaggle Datasets - Documentation
+# Backend Data Notes
 
-This folder contains three datasets downloaded from Kaggle for enhancing Indian retail sales forecasting.
+This folder contains archived training data, reference datasets, and offline-processing inputs. The live upload-based API does not require these files for normal forecasting requests.
 
-## 📁 Dataset Structure
+## Main datasets
 
-### 1. Diwali Sales Data (`diwali_sales/`)
-- **File**: `Diwali Sales Data.csv`
-- **Records**: 11,251 transactions
-- **Purpose**: Diwali festival shopping behavior analysis
-- **Key Columns**:
-  - `User_ID`: Customer identifier
-  - `Gender`, `Age Group`, `Age`: Demographics
-  - `State`, `Zone`: Geographic information
-  - `Product_Category`: Product type
-  - `Amount`: Transaction value
-  - `Orders`: Number of items
-  - `Marital_Status`, `Occupation`: Customer profile
+### 1. BigMart reference data
+- `Train.csv`
+- `Test.csv`
 
-**Usage**: Perfect for training models to recognize Diwali season sales spikes and customer behavior patterns during India's biggest shopping festival.
+These files belong to the older BigMart-style training workflow and are mainly relevant to `backend/model.py`.
 
----
+### 2. Unified offline training data
+- `unified_training_data.csv`
 
-### 2. Indian Retail Data (`indian_retail/`)
-- **File**: `INDIA_RETAIL_DATA.xlsx`
-- **Records**: 2,534 orders
-- **Purpose**: General Indian retail transaction data
-- **Key Columns**:
-  - `Order Date`, `Ship Date`: Temporal features
-  - `State`, `City`, `Region`, `Country`: Geographic data
-  - `Product Type`, `Product Sub-Category`: Product classification
-  - `Sales`, `Profit`: Financial metrics
-  - `QtyOrdered`: Quantity
-  - `Discount offered`, `Unit Price`: Pricing
-  - `Freight Mode`, `Freight Expenses`: Logistics
+This engineered dataset is produced by `backend/unified_data_processor.py` and is used by the archived integrated model workflow.
 
-**Usage**: Provides regional sales patterns, product performance, and pricing insights for Indian retail sector.
+### 3. Diwali sales reference data
+- `diwali_sales/Diwali Sales Data.csv`
 
----
+This dataset contributes festival-oriented signals for offline experimentation and analysis.
 
-### 3. Holidays Dataset (`holidays/`)
-- **File**: `INDIA_RETAIL_DATA.xlsx` (appears same as Indian Retail)
-- **Records**: 2,534
-- **Note**: This dataset appears to be identical to the Indian Retail dataset
+### 4. Indian retail reference data
+- `indian_retail/INDIA_RETAIL_DATA.xlsx`
 
-**Alternative**: The system uses Python's `holidays` library for Indian festival detection (already integrated in `indian_holidays.py`)
+This dataset provides dated retail rows that are useful for offline exploration and training experiments.
 
----
+### 5. Raw archive files
+- `archive.zip`
+- `Diwali Sales.zip`
+- `Holidays dataset.zip`
+- `indian retail.zip`
 
-## 🎯 Integration Approach
+These remain in the repository for provenance and manual reuse.
 
-### Option 1: Diwali-Specific Model
-Train a specialized model using Diwali Sales Data to predict festive season performance:
-- Focus on demographics (age, gender, location)
-- Product category preferences during festivit
-ies
-- Regional variations in Diwali shopping
+## Runtime distinction
 
-### Option 2: General Retail Model
-Use Indian Retail Data for broader predictions:
-- Time-series analysis with order dates
-- Regional sales patterns
-- Product subcategory performance
-- Discount impact on sales
+- Live API uploads come from user-provided CSV or XLSX files.
+- Upload parsing and normalization happen in `backend/analytics_engine.py`.
+- Holiday enrichment for the running app comes from `backend/market_holidays.py` and the `holidays` library.
+- Archived datasets in this folder are not loaded automatically for the standard `/api/upload-csv` to `/api/forecast` flow.
 
-### Option 3: Combined Approach
-Merge both datasets:
-1. Use Diwali data for festival-specific training
-2. Use Retail data for general baseline
-3. Apply festival calendar overlays from `indian_holidays.py`
+## Related files
 
----
-
-## 📊 Data Quality Notes
-
-### Diwali Sales Data
-- ✅ Clean dataset with minimal missing values
-- ✅ Rich demographic information
-- ⚠️ No explicit date column (Diwali season implied)
-- ✅ Good for customer segmentation
-
-### Indian Retail Data
-- ✅ Includes date columns for time-series
-- ✅ Regional diversity (multiple states/cities)
-- ✅ Product hierarchy (type → sub-category)
-- ⚠️ Smaller dataset (2,534 records)
-
----
-
-## 🚀 Next Steps
-
-1. **Feature Engineering**:
-   - Extract month/day from Order Date in Retail data
-   - Tag Diwali Sales records with approximate dates
-   - Create regional dummy variables
-   - Encode product categories
-
-2. **Model Training**:
-   - Enhance XGBoost with demographic features (from Diwali data)
-   - Train Prophet with regional regressors (from Retail data)
-   - Cross-validate on festival vs. non-festival periods
-
-3. **API Integration**:
-   - Add demographic-based prediction endpoint
-   - Regional forecast capabilities
-   - Product category-specific predictions
-
----
-
-## 📝 Example Use Cases
-
-### Scenario 1: Diwali Season Forecast
-"A retailer in Maharashtra wants to predict Diwali week sales for Electronics category"
-- Use: Diwali Sales Data (State=Maharashtra segment)
-- Features: Product_Category, Zone, Demographics
-- Output: Expected sales volume and customer segments
-
-### Scenario 2: Regional Expansion
-"Chain planning to open in Bangalore needs Q4 forecast"
-- Use: Indian Retail Data (City=Bangalore if available, or similar region)
-- Features: Regional patterns, seasonal trends
-- Output: Monthly sales projections
-
-### Scenario 3: Inventory Planning
-"Optimize stock levels for Baby Care products across North India"
-- Use: Both datasets combined
-- Features: Product category + Regional data + Festival calendar
-- Output: Weekly demand forecast with festival overlays
-
----
-
-## 🔗 Related Files
-
-- [`indian_holidays.py`](file:///c:/Users/rohit/Desktop/sales-prediction-system/backend/indian_holidays.py) - Festival calendar module
-- [`explore_datasets.py`](file:///c:/Users/rohit/Desktop/sales-prediction-system/backend/explore_datasets.py) - Data exploration script
-- [`dataset_summary.txt`](file:///c:/Users/rohit/Desktop/sales-prediction-system/backend/data/dataset_summary.txt) - Quick summary
-
----
-
-**🎉 These datasets significantly enhance the system's ability to predict Indian retail sales with cultural and regional context!**
+- `backend/explore_datasets.py`
+- `backend/unified_data_processor.py`
+- `backend/train_integrated_model.py`
+- `backend/ARCHIVED_SCRIPTS.md`
