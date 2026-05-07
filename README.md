@@ -84,6 +84,13 @@ Optional frontend env var:
 4. Inspect product search results, trend summaries, and holiday overlays.
 5. Generate an AI brief and export forecast rows if needed.
 
+## Runtime Notes
+
+- Upload sessions are stored in memory only and expire automatically.
+- Per-upload XGBoost JSON artifacts are written under `backend/models/`.
+- Older `.pkl` bundles in `backend/models/` are archived offline artifacts, not live runtime dependencies.
+- Sample upload files such as `smart.csv`, `hypermart.csv`, and `supplico.csv` are included in the repository root.
+
 ## Validation
 
 ```powershell
