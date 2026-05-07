@@ -1,110 +1,100 @@
-# 🚀 Sales Prediction & Retail Intelligence System
+# Sales Prediction & Retail Intelligence System
 
-A professional-grade retail analytics platform that transforms raw sales data into actionable business strategies. The system combines time-series forecasting, product-level drill-downs, and multilingual AI insights to help retailers understand their past and predict their future.
+This repository contains the current upload-driven retail analytics application. Users upload a CSV or XLSX dataset, the backend normalizes it into a shared structure, analyzes historical patterns, forecasts future sales with Prophet plus optional per-upload XGBoost blending, overlays market holidays, and generates short Groq-powered business summaries.
 
----
+`explain.md` is the best source of truth when older markdown files disagree with the implementation.
 
-## 🌟 Core Features
+## Core Features
 
-### 1. 📊 Smart Data Upload & Normalization
-*   **Flexible Formats:** Supports `.xlsx` and `.csv` files.
-*   **Automatic Detection:** Dynamically identifies date and sales columns, and infers data granularity (Daily, Weekly, Monthly, or Yearly).
-*   **Product Extraction:** Automatically detects product identifiers (Names or IDs) to enable granular filtering.
+### 1. Upload-based normalization
+- Supports `.csv` and `.xlsx` retail datasets.
+- Auto-detects date, sales, and product columns.
+- Infers upload granularity as daily, weekly, monthly, or yearly.
 
-### 2. 🔮 Advanced Sales Forecasting
-*   **Prophet-Powered:** Uses the Meta Prophet model for robust time-series forecasting.
-*   **Granular Predictions:** Matches the forecast length to your data (e.g., 30 days for daily data, 12 months for monthly data).
-*   **Uncertainty Intervals:** Provides lower and upper confidence bounds for every prediction.
+### 2. Forecasting and analysis
+- Uses Prophet for the main time-series forecast.
+- Can blend in per-upload XGBoost models trained during the upload flow.
+- Returns summary metrics, trend highlights, and forecast intervals.
 
-### 3. 🌍 Multi-Market Intelligence (New!)
-*   **Market Selection:** Toggle between **India, USA, UK, UAE, Australia, and Canada**.
-*   **Dynamic Currency:** Automatically switches symbols (₹, $, £, AED) and formatting based on the selected market.
-*   **Holiday Awareness:** Injects country-specific holiday regressors (e.g., Diwali for India, Thanksgiving for USA) into the AI model for higher seasonal accuracy.
+### 3. Product drill-down
+- Supports search within an upload session.
+- Builds normalized product keys when item identifiers are available.
+- Shows leaderboard and selected-product analysis from the same uploaded dataset.
 
-### 4. 🤖 Gemini AI Strategic Analyst
-*   **Explainable Trends:** Generates natural language explanations of sales health.
-*   **Actionable Advice:** Provides exactly 3 concrete steps to improve sales based on current data.
-*   **Multilingual:** Supports **English, Hindi, Marathi, Bengali, Telugu, and Tamil**.
+### 4. Market-aware context
+- Supports India, United States, United Kingdom, UAE, Australia, and Canada.
+- Adds market-specific holiday markers and festival summaries.
+- Adjusts frontend currency display based on the selected market.
 
-### 5. 🔬 Product Deep-Dive
-*   **Searchable Inventory:** Quickly find any product from your uploaded dataset.
-*   **Isolated Analysis:** View specific trends and local forecasts for a single item.
-*   **Leaderboard:** Automatically ranks top-performing products by total sales and volume.
+### 5. AI summaries
+- Uses Groq, not Gemini, for AI-generated business briefs.
+- Supports English, Hindi, Marathi, Bengali, Telugu, Tamil, and Malayalam.
+- Returns a fallback message when `GROQ_API_KEY` is missing or invalid.
 
----
-
-## 📁 Project Architecture
+## Architecture
 
 ```text
-sales-prediction-system/
-├── backend/                # Flask Server
-│   ├── app.py              # Main API Hub & Route Handlers
-│   ├── analytics_engine.py # Core Forecasting & Data Logic (Prophet)
-│   ├── market_holidays.py  # Global Holiday Database & Logic
-│   ├── model.py            # XGBoost Single-Item Model (Attributes)
-│   ├── requirements.txt    # Backend Dependencies
-│   └── data/               # Historical Datasets
-├── frontend/               # React (Vite) Application
-│   ├── src/
-│   │   ├── App.jsx         # Main Dashboard Interface
-│   │   └── components/     # UI Components (Charts, Uploaders)
-│   └── package.json        # Frontend Dependencies
-└── models/                 # Saved ML Models (.pkl)
+frontend (React + Vite + Tailwind + Recharts)
+    -> calls
+backend/app.py (Flask API)
+    -> uses
+analytics_engine.py   # upload parsing, normalization, analysis, Prophet forecast
+ensemble_engine.py    # per-upload XGBoost and Prophet+XGBoost blending
+market_holidays.py    # multi-country holiday logic
+ai_engine.py          # Groq-powered AI brief generation
 ```
 
----
+There is no database, queue, auth layer, or persistent upload session store in the current app.
 
-## 🛠️ Quick Start Guide
+## Quick Start
 
-### 1. Prerequisites
-*   Python 3.9+
-*   Node.js & npm
-*   Google Gemini API Key ([Get it here](https://aistudio.google.com/app/apikey))
+### Backend
 
-### 2. Backend Setup
-```bash
+```powershell
 cd backend
 python -m venv venv
-# Windows:
-.\venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
+venv\Scripts\activate
 pip install -r requirements.txt
-```
-**Configure Environment:** Create a `.env` file in the `backend/` folder:
-```env
-GOOGLE_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.0-flash
+copy .env.example .env
+venv\Scripts\python app.py
 ```
 
-### 3. Frontend Setup
-```bash
+Set these values in `backend/.env` as needed:
+- `GROQ_API_KEY`
+- `GROQ_MODEL`
+- `UPLOAD_TTL_MINUTES`
+- `MAX_UPLOAD_SESSIONS`
+
+### Frontend
+
+```powershell
 cd frontend
 npm install
 npm run dev
 ```
 
-### 4. Run the App
-1.  Start the backend: `python app.py`
-2.  Start the frontend: `npm run dev`
-3.  Open `http://localhost:5173` in your browser.
+Optional frontend env var:
+- `VITE_API_URL` defaults to `http://localhost:5000/api`
 
----
+## Usage Workflow
 
-## 📈 Usage Workflow
-1.  **Select Market:** Choose your country from the top-right dropdown.
-2.  **Upload:** Drag and drop your sales spreadsheet.
-3.  **Analyze:** Click "Generate forecast and insights".
-4.  **Explore:** Use the search bar to zoom into specific products.
-5.  **Strategize:** Click "Generate AI insight" to get your business plan.
+1. Select a market in the frontend.
+2. Upload a CSV or XLSX retail dataset.
+3. Run forecast and pattern analysis for all products or one selected item.
+4. Inspect product search results, trend summaries, and holiday overlays.
+5. Generate an AI brief and export forecast rows if needed.
 
----
+## Validation
 
-## ⚖️ Accuracy & Performance
-The system uses a hybrid approach:
-*   **Seasonality:** Captured via the Prophet model's Fourier series components.
-*   **Holidays:** Modeled as point-in-time regressors with a +/- 7-day window.
-*   **Granularity:** Optimized comparison windows for stable growth metrics.
+```powershell
+backend\venv\Scripts\python.exe backend\smoke_test.py
+cd frontend
+npm run build
+```
 
-*This project is designed for both Indian and International retail markets.*
+## Related Docs
+
+- `explain.md` for the audited repository explanation
+- `QUICKSTART.md` for the shortest local run path
+- `SETUP.md` for more detailed environment notes
+- `backend/README.md` for backend module documentation
