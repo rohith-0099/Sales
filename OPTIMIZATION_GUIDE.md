@@ -4,6 +4,8 @@
 
 This document outlines the performance optimizations made to the sales-prediction-system and recommendations for further tuning.
 
+The notes below focus on the active upload-based runtime path. Archived `.pkl` model bundles and offline training scripts are not in the normal request hot path.
+
 ## Quick Win Optimizations
 
 ### 1. Configuration Caching
@@ -220,13 +222,17 @@ python -m cProfile -s cumtime backend/app.py
 
 ### Check Current System Performance
 ```bash
-# Run smoke tests
-cd backend
-python smoke_test.py
+# Run backend smoke tests from the repo root
+backend\venv\Scripts\python.exe backend\smoke_test.py
 
-# Monitor response times
-curl -w "Response time: %{time_total}s" http://localhost:5000/api/health
+# Build the frontend production bundle
+cd frontend
+npm run build
 ```
+
+Operational reminder:
+- upload sessions are in-memory only
+- per-upload XGBoost JSON files can accumulate under `backend/models/`
 
 ### Identify Slow Endpoints
 ```python
