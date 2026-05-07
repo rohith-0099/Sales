@@ -108,6 +108,25 @@ Input validation utilities.
 
 See `ARCHIVED_SCRIPTS.md` for information about offline training scripts.
 
+## Live Runtime Notes
+
+- The active API is the upload-based forecasting stack exposed through `app.py`.
+- Upload sessions are stored in memory only and expire using the configured TTL.
+- Per-upload XGBoost artifacts are written to `backend/models/` and are not automatically deleted.
+- Archived `.pkl` bundles remain in the repository for offline workflows, not the live upload path.
+
+## Active API Endpoints
+
+- `GET /api/health`
+- `POST /api/upload-csv`
+- `GET /api/products/search`
+- `POST /api/forecast`
+- `POST /api/analyze-patterns`
+- `GET /api/festival-impact`
+- `GET /api/holidays`
+- `GET /api/model-info`
+- `POST /api/ai-insights`
+
 ## Environment Variables
 
 See `.env.example` for configuration options.
