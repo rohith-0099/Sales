@@ -139,3 +139,4 @@ AI_TIMEOUT=45                 # Slightly longer for complex queries
 3. Monitor logs for warnings about expired sessions
 4. Check memory usage over extended operation periods
 5. Monitor API response times with performance timing utilities
+6. Review log files for unexpected errors.
