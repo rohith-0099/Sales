@@ -105,3 +105,6 @@ npm run build
 - `QUICKSTART.md` for the shortest local run path
 - `SETUP.md` for more detailed environment notes
 - `backend/README.md` for backend module documentation
+
+---
+*Note: This repository is actively maintained.*
