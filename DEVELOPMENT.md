@@ -283,3 +283,5 @@ Refer to:
 - `OPTIMIZATION_GUIDE.md` - Performance tuning guide
 - `BUGFIXES.md` - Bug fixes and improvements
 - `explain.md` - Detailed project documentation
+
+*For further assistance, please open an issue on the repository.*
