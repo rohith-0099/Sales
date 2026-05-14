@@ -83,3 +83,4 @@ npm run build
 - Upload sessions are stored in memory and are cleared on server restart.
 - Per-upload XGBoost JSON files can accumulate under `backend/models/`.
 - Archived `.pkl` model bundles are retained for offline experimentation, not the live runtime path.
+- Always verify your Python version before installation.
