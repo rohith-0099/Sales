@@ -284,3 +284,4 @@ AI_TIMEOUT=60                   # More forgiving for slow APIs
 3. **Tune Configuration**: Adjust settings for your specific workload
 4. **Scale Horizontally**: Add load balancer and multiple instances
 5. **Optimize Front-End**: Implement caching headers, code splitting, gzip compression
+6. **Database Indexing**: If a database is added, ensure proper indexing is in place.
