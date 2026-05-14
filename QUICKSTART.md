@@ -67,3 +67,4 @@ This verifies:
 - Upload sessions are stored in memory only.
 - Per-upload XGBoost model files are saved under `backend/models/`.
 - Archived `.pkl` bundles remain in the repo for offline experimentation only.
+- Please refer to `SETUP.md` for more detailed configuration options.
