@@ -594,13 +594,46 @@ function App() {
 
   const analysisReady = Boolean(patternAnalysis && forecastSummary);
 
+    
+    const productLabel = selectedProduct || 'Total_Store';
+    const today = new Date().toISOString().split('T')[0];
+    const fileName = `${productLabel.replace(/[^a-z0-9]/gi, '_')}_forecast_${today}.csv`;
+    
+    const headers = ['date', 'predicted_sales', 'lower_bound', 'upper_bound', 'is_festival', 'festival_name'];
+    const rows = forecastData.map(row => [
+      row.date,
+      row.predicted_sales,
+      row.lower_bound,
+      row.upper_bound,
+      row.is_festival ? 'YES' : 'NO',
+      row.festival_name || ''
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  const analysisReady = Boolean(patternAnalysis && forecastSummary);
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(253,224,71,0.18),_transparent_28%),linear-gradient(180deg,_#fffef6_0%,_#f8fafc_42%,_#eef2ff_100%)]">
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-600">
-              Retail Intelligence Platform
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-indigo-600">
+              Retail Sales Intelligence
             </p>
             <div className="flex items-center gap-3">
               <label htmlFor="market-select" className="text-sm font-medium text-slate-700">Market:</label>
@@ -617,7 +650,7 @@ function App() {
           <div className="mt-4 grid gap-6 lg:grid-cols-[1.7fr_1fr] lg:items-end">
             <div>
               <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                Upload retail sales data, inspect product-level trends, and forecast what comes next.
+                Upload your retail sales data, inspect product-level trends, and forecast what comes next.
               </h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
                 The dashboard accepts daily, weekly, monthly, or yearly retail sales data, identifies product
