@@ -628,7 +628,7 @@ function App() {
   const analysisReady = Boolean(patternAnalysis && forecastSummary);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(253,224,71,0.18),_transparent_28%),linear-gradient(180deg,_#fffef6_0%,_#f8fafc_42%,_#eef2ff_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(253,224,71,0.15),_transparent_30%),linear-gradient(180deg,_#fffef6_0%,_#f8fafc_45%,_#eef2ff_100%)]">
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
