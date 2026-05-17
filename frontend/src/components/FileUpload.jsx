@@ -32,8 +32,8 @@ function FileUpload({ onFileSelected, disabled = false }) {
         disabled
           ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
           : isDragActive
-            ? 'cursor-pointer border-emerald-500 bg-emerald-50 text-emerald-700'
-            : 'cursor-pointer border-slate-300 bg-slate-50 text-slate-700 hover:border-emerald-400 hover:bg-white',
+            ? 'cursor-pointer border-indigo-500 bg-indigo-50 text-indigo-700'
+            : 'cursor-pointer border-slate-300 bg-slate-50 text-slate-700 hover:border-indigo-400 hover:bg-white',
       ].join(' ')}
     >
       <input {...getInputProps()} />
