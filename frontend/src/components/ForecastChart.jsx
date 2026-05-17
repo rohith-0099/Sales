@@ -31,7 +31,7 @@ const CustomTooltip = ({ active, payload, marketCode }) => {
   const point = payload[0].payload;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-lg">
+    <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-lg backdrop-blur-sm">
       <p className="text-sm font-semibold text-slate-900">{point.date}</p>
       {point.sales !== undefined ? (
         <p className="mt-2 text-sm text-slate-600">
