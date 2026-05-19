@@ -48,7 +48,7 @@ function FileUpload({ onFileSelected, disabled = false }) {
           The backend will normalize dates, detect sales columns, infer dataset granularity, and prepare
           product-level indexing for search.
         </p>
-        <p className="text-xs text-slate-500">Supported formats: .csv and .xlsx</p>
+        <p className="text-xs text-slate-500">Supported formats: .csv and .xlsx (Max 50MB)</p>
       </div>
     </div>
   );
