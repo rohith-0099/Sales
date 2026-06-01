@@ -101,7 +101,8 @@ Optional frontend env var:
 ## Validation
 
 ```powershell
-backend\venv\Scripts\python.exe backend\smoke_test.py
+cd backend
+venv\Scripts\python.exe smoke_test.py
 cd frontend
 npm run build
 ```
