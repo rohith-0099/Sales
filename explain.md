@@ -402,6 +402,16 @@ Important AI behavior note:
 - if the Groq API key is missing or invalid, the backend returns an unavailable or fallback response in the `insights` field
 - there is no full local LLM replacement in the repo
 
+## 13. Key Files And Artifacts
+
+- `backend/app.py` for API routes and upload session lifecycle
+- `backend/analytics_engine.py` for parsing, normalization, analysis, and Prophet forecasting
+- `backend/ensemble_engine.py` for per-upload XGBoost models and Prophet blending
+- `backend/market_holidays.py` for market calendar and festival enrichment
+- `backend/ai_engine.py` for Groq prompt orchestration
+- `backend/models/` for per-upload XGBoost JSON artifacts
+- `frontend/src/App.jsx` for page state orchestration and API calls
+
 ## 13. Offline Training And Archived Model Assets
 
 The active runtime app does not depend on pre-trained `.pkl` bundles for live forecasting. Forecasting is driven by uploaded data plus per-session modeling.
