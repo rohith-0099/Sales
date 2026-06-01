@@ -9,6 +9,9 @@ Audit status:
 - Verified against shipped datasets and model artifacts in this repo.
 - Verified with backend route checks and a successful frontend production build.
 
+Maintenance note:
+- If you change core behavior (routes, upload parsing, forecasting logic), update this file first.
+
 Important corrections up front:
 - The active product is the upload-based forecasting and analytics system.
 - The legacy BigMart-style prediction flow has been removed from the live UI and backend API.
