@@ -2,7 +2,7 @@
 
 This repository contains the current upload-driven retail analytics application. Users upload a CSV or XLSX dataset, the backend normalizes it into a shared structure, analyzes historical patterns, forecasts future sales with Prophet plus optional per-upload XGBoost blending, overlays market holidays, and generates short Groq-powered business summaries.
 
-`explain.md` is the best source of truth when older markdown files disagree with the implementation.
+When older markdown files disagree with the implementation, use `explain.md` as the source of truth.
 
 ## Core Features
 
@@ -46,6 +46,12 @@ ai_engine.py          # Groq-powered AI brief generation
 
 There is no database, queue, auth layer, or persistent upload session store in the current app.
 
+## Prerequisites
+
+- Python 3.10+ (3.11 recommended for Prophet compatibility)
+- Node.js 18+
+- npm 9+
+
 ## Quick Start
 
 ### Backend
@@ -69,6 +75,7 @@ Set these values in `backend/.env` as needed:
 
 ```powershell
 cd frontend
+copy .env.example .env
 npm install
 npm run dev
 ```
